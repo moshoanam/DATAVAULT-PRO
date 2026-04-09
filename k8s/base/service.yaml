@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: datavault-backend
+  namespace: datavault
+  labels:
+    app.kubernetes.io/name: datavault-pro
+    app.kubernetes.io/component: backend
+spec:
+  selector:
+    app: datavault-backend
+  ports:
+    - name: http
+      port: 80
+      targetPort: 8080
+      protocol: TCP
+  type: ClusterIP

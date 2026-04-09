@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: datavault-config
+  namespace: datavault
+  labels:
+    app.kubernetes.io/name: datavault-pro
+data:
+  SPRING_PROFILES_ACTIVE: "production"
+  LOG_LEVEL: "INFO"
+  METADATA_SYNC_ENABLED: "true"
+  METADATA_SYNC_CRON: "0 0 */6 * * *"
+  SPRING_JPA_HIBERNATE_DDL_AUTO: "validate"
+  SPRING_FLYWAY_ENABLED: "true"
+  SPRING_THYMELEAF_CACHE: "true"
+  SERVER_TOMCAT_MAX_THREADS: "200"
+  SERVER_TOMCAT_MIN_SPARE_THREADS: "20"

@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head th:replace="~{fragments/header :: header}"></head>
+<body class="bg-gray-50">
+    <nav th:replace="~{fragments/navbar :: navbar(activePage='glossary')}"></nav>
+
+    <main class="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        
+        <div class="mb-8">
+            <h1 class="text-3xl font-bold text-gray-900 mb-2" th:text="${term != null ? 'Edit Term' : 'Add Term'}">Add Glossary Term</h1>
+            <p class="text-gray-600">Define business terminology for your data catalog</p>
+        </div>
+
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
+            <form id="glossaryForm" onsubmit="saveTerm(event)">
+                
+                <input type="hidden" id="termId" th:value="${term?.id}">
+                
+                <!-- Term -->
+                <div class="mb-6">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Term *</label>
+                    <input type="text" id="term" required 
+                           th:value="${term?.term}"
+                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary"
+                           placeholder="e.g., Customer">
+                </div>
+
+                <!-- Definition -->
+                <div class="mb-6">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Definition *</label>
+                    <textarea id="definition" required rows="4"
+                              th:text="${term?.definition}"
+                              class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary"
+                              placeholder="Clear definition of the term"></textarea>
+                </div>
+
+                <!-- Category -->
+                <div class="mb-6">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Category</label>
+                    <select id="category" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary">
+                        <option value="Business">Business</option>
+                        <option value="Technical">Technical</option>
+                        <option value="Compliance">Compliance</option>
+                        <option value="Product">Product</option>
+                        <option value="Finance">Finance</option>
+                        <option value="Marketing">Marketing</option>
+                    </select>
+                </div>
+
+                <!-- Synonyms -->
+                <div class="mb-6">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Synonyms</label>
+                    <input type="text" id="synonyms"
+                           th:value="${term?.synonyms}"
+                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary"
+                           placeholder="Comma-separated (e.g., Client, Buyer, Consumer)">
+                    <p class="mt-1 text-sm text-gray-500">Enter alternative names for this term</p>
+                </div>
+
+                <!-- Related Terms -->
+                <div class="mb-6">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Related Terms</label>
+                    <input type="text" id="relatedTerms"
+                           th:value="${term?.relatedTerms}"
+                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary"
+                           placeholder="Comma-separated (e.g., Order, Invoice, Payment)">
+                    <p class="mt-1 text-sm text-gray-500">Terms that are conceptually related</p>
+                </div>
+
+                <!-- Buttons -->
+                <div class="flex space-x-4">
+                    <button type="submit" class="flex-1 px-6 py-2 bg-primary text-white rounded-lg hover:bg-secondary transition">
+                        <span th:text="${term != null ? 'Update Term' : 'Create Term'}">Create Term</span>
+                    </button>
+                    <button type="button" onclick="window.location.href='/glossary'" 
+                            class="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition">
+                        Cancel
+                    </button>
+                </div>
+
+            </form>
+
+            <!-- Status Message -->
+            <div id="statusMessage" class="mt-6 hidden"></div>
+        </div>
+
+    </main>
+
+    <script th:inline="javascript">
+        const termId = /*[[${term?.id}]]*/ null;
+
+        async function saveTerm(event) {
+            event.preventDefault();
+            
+            const data = {
+                term: document.getElementById('term').value,
+                definition: document.getElementById('definition').value,
+                category: document.getElementById('category').value,
+                synonyms: document.getElementById('synonyms').value,
+                relatedTerms: document.getElementById('relatedTerms').value
+            };
+            
+            try {
+                const url = termId ? `/api/v1/glossary/${termId}` : '/api/v1/glossary';
+                const method = termId ? 'PUT' : 'POST';
+                
+                const response = await fetch(url, {
+                    method: method,
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(data)
+                });
+                
+                if (!response.ok) throw new Error('Failed to save term');
+                
+                showStatus('✓ Term saved successfully!', 'success');
+                
+                setTimeout(() => {
+                    window.location.href = '/glossary';
+                }, 1500);
+                
+            } catch (error) {
+                showStatus('✗ Error: ' + error.message, 'error');
+            }
+        }
+
+        function showStatus(message, type) {
+            const status = document.getElementById('statusMessage');
+            status.className = 'mt-6 p-4 rounded-lg ' + 
+                (type === 'success' ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-800');
+            status.textContent = message;
+            status.classList.remove('hidden');
+        }
+
+        // Set category if editing
+        if (termId) {
+            const category = /*[[${term?.category}]]*/ '';
+            if (category) {
+                document.getElementById('category').value = category;
+            }
+        }
+    </script>
+</body>
+</html>

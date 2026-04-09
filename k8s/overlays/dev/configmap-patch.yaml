@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: datavault-config
+data:
+  SPRING_PROFILES_ACTIVE: "development"
+  LOG_LEVEL: "DEBUG"
+  METADATA_SYNC_ENABLED: "false"
+  SPRING_JPA_HIBERNATE_DDL_AUTO: "update"
+  SPRING_FLYWAY_ENABLED: "false"

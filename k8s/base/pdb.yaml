@@ -1,0 +1,12 @@
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: datavault-backend-pdb
+  namespace: datavault
+  labels:
+    app.kubernetes.io/name: datavault-pro
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: datavault-backend

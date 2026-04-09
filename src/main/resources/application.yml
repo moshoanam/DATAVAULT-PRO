@@ -1,0 +1,103 @@
+spring:
+  application:
+    name: datavault-pro-backend
+  
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:development}
+  
+  datasource:
+    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/datavault_catalog}
+    username: ${DATABASE_USERNAME:postgres}
+    password: ${DATABASE_PASSWORD:postgres}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
+      connection-timeout: 30000
+  
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+  
+  flyway:
+    enabled: false
+
+  thymeleaf:
+    cache: false
+
+  cache:
+    type: caffeine
+    caffeine:
+      spec: maximumSize=1000,expireAfterWrite=3600s
+    cache-names:
+      - databases
+      - database
+      - tables
+      - table
+      - fields
+      - field
+      - glossaryTerms
+      - glossaryTerm
+      - changeHistory
+      - change
+      - tableQuality
+
+server:
+  port: 8080
+  compression:
+    enabled: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+
+logging:
+  level:
+    root: INFO
+    com.datavault: ${LOG_LEVEL:DEBUG}
+
+app:
+  metadata-sync:
+    enabled: ${METADATA_SYNC_ENABLED:false}
+    cron: ${METADATA_SYNC_CRON:0 0 */6 * * *}
+  catalog:
+    max-search-results: 100
+  lineage:
+    max-depth: 10
+
+# H2 fallback (comment out to use PostgreSQL)
+#spring:
+#  datasource:
+#    url: jdbc:h2:mem:datavault_catalog
+#    username: sa
+#    password:
+#    driver-class-name: org.h2.Driver
+#  jpa:
+#    properties:
+#      hibernate:
+#        dialect: org.hibernate.dialect.H2Dialect
+#  h2:
+#    console:
+#      enabled: true
+#      path: /h2-console

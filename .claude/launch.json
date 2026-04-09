@@ -1,0 +1,24 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "DataVault Pro Backend",
+      "runtimeExecutable": "bash",
+      "runtimeArgs": [
+        "-c",
+        "export JAVA_HOME=$HOME/jdk17/Contents/Home && export PATH=$JAVA_HOME/bin:/tmp/gradle/gradle-8.5/bin:$PATH && gradle bootRun --args=\"--server.port=${PORT:-8080} --spring.datasource.url=jdbc:h2:mem:datavault_catalog --spring.datasource.username=sa --spring.datasource.password= --spring.datasource.driver-class-name=org.h2.Driver --spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.H2Dialect --spring.h2.console.enabled=true --spring.autoconfigure.exclude=org.springframework.boot.autoconfigure.mongo.MongoAutoConfiguration,org.springframework.boot.autoconfigure.data.mongo.MongoDataAutoConfiguration\""
+      ],
+      "port": 8080,
+      "autoPort": true
+    },
+    {
+      "name": "DataVault Pro Backend (H2 in-memory)",
+      "runtimeExecutable": "bash",
+      "runtimeArgs": [
+        "-c",
+        "export JAVA_HOME=$HOME/jdk17/Contents/Home && export PATH=$JAVA_HOME/bin:/tmp/gradle/gradle-8.5/bin:$PATH && gradle bootRun --args='--server.port=8081 --spring.datasource.url=jdbc:h2:mem:datavault_catalog --spring.datasource.username=sa --spring.datasource.password= --spring.datasource.driver-class-name=org.h2.Driver --spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.H2Dialect --spring.h2.console.enabled=true --spring.h2.console.path=/h2-console'"
+      ],
+      "port": 8081
+    }
+  ]
+}

@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head th:replace="~{fragments/header :: header}"></head>
+<body class="bg-gray-50">
+    <nav th:replace="~{fragments/navbar :: navbar(activePage='quality')}"></nav>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+        <!-- Page Header -->
+        <div class="mb-8 flex items-center justify-between">
+            <div>
+                <h1 class="text-3xl font-bold text-gray-900 mb-2">Data Quality</h1>
+                <p class="text-gray-600">Monitor and improve data quality across your catalog</p>
+            </div>
+            <button onclick="runQualityAssessment(event)"
+                    id="run-assessment-btn"
+                    class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition text-sm font-medium flex items-center gap-2">
+                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                Run Assessment
+            </button>
+        </div>
+
+        <!-- Stats Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-sm font-medium text-gray-600">Average Score</span>
+                    <div class="p-2 rounded-lg bg-green-50">
+                        <svg class="h-5 w-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                        </svg>
+                    </div>
+                </div>
+                <p id="stat-avg-score" class="text-3xl font-bold text-gray-900">--</p>
+                <p class="text-xs text-gray-500 mt-1">Across all tables</p>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-sm font-medium text-gray-600">High Quality</span>
+                    <div class="p-2 rounded-lg bg-green-50">
+                        <svg class="h-5 w-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                        </svg>
+                    </div>
+                </div>
+                <p id="stat-high-quality" class="text-3xl font-bold text-gray-900">--</p>
+                <p class="text-xs text-gray-500 mt-1">Tables scoring &#x2265;95%</p>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-sm font-medium text-gray-600">Medium Quality</span>
+                    <div class="p-2 rounded-lg bg-yellow-50">
+                        <svg class="h-5 w-5 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                        </svg>
+                    </div>
+                </div>
+                <p id="stat-medium-quality" class="text-3xl font-bold text-gray-900">--</p>
+                <p class="text-xs text-gray-500 mt-1">Tables scoring 85&#x2013;94%</p>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-sm font-medium text-gray-600">Needs Attention</span>
+                    <div class="p-2 rounded-lg bg-red-50">
+                        <svg class="h-5 w-5 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                    </div>
+                </div>
+                <p id="stat-low-quality" class="text-3xl font-bold text-gray-900">--</p>
+                <p class="text-xs text-gray-500 mt-1">Tables scoring &lt;85%</p>
+            </div>
+
+        </div>
+
+        <!-- Quality Distribution -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8">
+            <h2 class="text-lg font-semibold text-gray-900 mb-4">Quality Distribution</h2>
+            <div id="quality-distribution" class="space-y-4">
+                <div class="animate-pulse space-y-3">
+                    <div class="h-4 bg-gray-200 rounded w-full"></div>
+                    <div class="h-4 bg-gray-200 rounded w-3/4"></div>
+                    <div class="h-4 bg-gray-200 rounded w-1/2"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quality by Table -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+            <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+                <h2 class="text-lg font-semibold text-gray-900">Quality by Table</h2>
+                <span id="tables-count" class="text-sm text-gray-500"></span>
+            </div>
+
+            <div id="tables-loading" class="p-12 text-center">
+                <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+                <p class="mt-3 text-sm text-gray-500">Loading tables...</p>
+            </div>
+
+            <table id="quality-table" class="min-w-full divide-y divide-gray-200 hidden">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Table</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Database</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quality Score</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="quality-table-body" class="bg-white divide-y divide-gray-200"></tbody>
+            </table>
+
+            <div id="tables-empty" class="p-12 text-center hidden">
+                <svg class="mx-auto h-12 w-12 text-gray-300 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                </svg>
+                <p class="text-gray-500 text-sm">No tables found. Onboard a database to get started.</p>
+            </div>
+        </div>
+
+    </main>
+
+    <script>
+        function esc(s) {
+            if (s == null) return '';
+            return String(s)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
+        function scoreStyle(score) {
+            if (score == null) return { bar: 'bg-gray-400', badge: 'bg-gray-100 text-gray-700', label: 'Unknown' };
+            if (score >= 95)   return { bar: 'bg-green-500',  badge: 'bg-green-100 text-green-800',  label: 'High' };
+            if (score >= 85)   return { bar: 'bg-yellow-500', badge: 'bg-yellow-100 text-yellow-800', label: 'Medium' };
+            return                    { bar: 'bg-red-500',    badge: 'bg-red-100 text-red-800',    label: 'Low' };
+        }
+
+        async function loadSummary() {
+            try {
+                const res = await fetch('/api/v1/governance/quality-summary');
+                if (!res.ok) return;
+                const d = await res.json();
+
+                const avg = d.averageQualityScore != null ? d.averageQualityScore.toFixed(1) + '%' : '--';
+                document.getElementById('stat-avg-score').textContent = avg;
+                document.getElementById('stat-high-quality').textContent = d.highQualityCount ?? '--';
+                document.getElementById('stat-medium-quality').textContent = d.mediumQualityCount ?? '--';
+                document.getElementById('stat-low-quality').textContent = d.lowQualityCount ?? '--';
+
+                const high = d.highQualityCount ?? 0;
+                const med  = d.mediumQualityCount ?? 0;
+                const low  = d.lowQualityCount ?? 0;
+                const total = high + med + low;
+
+                const pct = (n) => total > 0 ? ((n / total) * 100).toFixed(1) : 0;
+
+                document.getElementById('quality-distribution').innerHTML = `
+                    <div>
+                        <div class="flex justify-between text-sm mb-1">
+                            <span class="font-medium text-green-700">High Quality (&ge;95%)</span>
+                            <span class="text-gray-600">${high} tables &nbsp;(${pct(high)}%)</span>
+                        </div>
+                        <div class="w-full bg-gray-100 rounded-full h-3">
+                            <div class="bg-green-500 h-3 rounded-full transition-all duration-500" style="width:${pct(high)}%"></div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="flex justify-between text-sm mb-1">
+                            <span class="font-medium text-yellow-700">Medium Quality (85&ndash;94%)</span>
+                            <span class="text-gray-600">${med} tables &nbsp;(${pct(med)}%)</span>
+                        </div>
+                        <div class="w-full bg-gray-100 rounded-full h-3">
+                            <div class="bg-yellow-500 h-3 rounded-full transition-all duration-500" style="width:${pct(med)}%"></div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="flex justify-between text-sm mb-1">
+                            <span class="font-medium text-red-700">Needs Attention (&lt;85%)</span>
+                            <span class="text-gray-600">${low} tables &nbsp;(${pct(low)}%)</span>
+                        </div>
+                        <div class="w-full bg-gray-100 rounded-full h-3">
+                            <div class="bg-red-500 h-3 rounded-full transition-all duration-500" style="width:${pct(low)}%"></div>
+                        </div>
+                    </div>
+                    ${total === 0 ? '<p class="text-sm text-gray-400 text-center pt-2">No quality data available yet. Run an assessment to populate scores.</p>' : ''}
+                `;
+            } catch (e) {
+                console.error('Failed to load quality summary', e);
+            }
+        }
+
+        async function loadTables() {
+            try {
+                const res = await fetch('/api/v1/tables?page=0&size=100');
+                if (!res.ok) throw new Error('API error');
+                const d = await res.json();
+                const tables = Array.isArray(d) ? d : (d.content ?? []);
+
+                document.getElementById('tables-loading').classList.add('hidden');
+
+                if (tables.length === 0) {
+                    document.getElementById('tables-empty').classList.remove('hidden');
+                    return;
+                }
+
+                document.getElementById('tables-count').textContent = tables.length + ' tables';
+
+                const sorted = [...tables].sort((a, b) => {
+                    const sa = a.dataQualityScore ?? 101;
+                    const sb = b.dataQualityScore ?? 101;
+                    return sa - sb;
+                });
+
+                document.getElementById('quality-table-body').innerHTML = sorted.map(t => {
+                    const score = t.dataQualityScore;
+                    const c = scoreStyle(score);
+                    const scoreDisplay = score != null ? score.toFixed(1) + '%' : 'N/A';
+                    const barPct = score != null ? Math.min(score, 100).toFixed(1) : 0;
+                    return `<tr class="hover:bg-gray-50">
+                        <td class="px-6 py-4 text-sm font-medium text-gray-900">${esc(t.tableName)}</td>
+                        <td class="px-6 py-4 text-sm text-gray-500">${esc(t.databaseName ?? '')}</td>
+                        <td class="px-6 py-4">
+                            <div class="flex items-center gap-2">
+                                <div class="w-24 h-2 bg-gray-200 rounded-full overflow-hidden">
+                                    <div class="h-full ${c.bar} rounded-full" style="width:${barPct}%"></div>
+                                </div>
+                                <span class="text-sm font-medium text-gray-900">${scoreDisplay}</span>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4">
+                            <span class="px-2 py-1 text-xs font-medium rounded-full ${c.badge}">${c.label}</span>
+                        </td>
+                        <td class="px-6 py-4 text-right">
+                            <button onclick="recalculate(${t.id}, this)"
+                                    class="text-xs text-indigo-600 hover:text-indigo-800 font-medium">
+                                Recalculate
+                            </button>
+                        </td>
+                    </tr>`;
+                }).join('');
+
+                document.getElementById('quality-table').classList.remove('hidden');
+            } catch (e) {
+                console.error('Failed to load tables', e);
+                document.getElementById('tables-loading').classList.add('hidden');
+                document.getElementById('tables-empty').classList.remove('hidden');
+            }
+        }
+
+        async function recalculate(tableId, btn) {
+            const orig = btn.textContent;
+            btn.textContent = 'Calculating...';
+            btn.disabled = true;
+            try {
+                const res = await fetch(`/api/v1/tables/${tableId}/quality/calculate`, { method: 'POST' });
+                if (res.ok) {
+                    await Promise.all([loadSummary(), loadTables()]);
+                }
+            } catch (e) {
+                console.error('Recalculate failed', e);
+                btn.textContent = orig;
+                btn.disabled = false;
+            }
+        }
+
+        async function runQualityAssessment(event) {
+            const btn = document.getElementById('run-assessment-btn');
+            btn.disabled = true;
+            btn.textContent = 'Running...';
+            try {
+                const res = await fetch('/api/v1/tables?page=0&size=200');
+                if (res.ok) {
+                    const d = await res.json();
+                    const tables = Array.isArray(d) ? d : (d.content ?? []);
+                    for (const t of tables) {
+                        await fetch(`/api/v1/tables/${t.id}/quality/calculate`, { method: 'POST' });
+                    }
+                }
+                await Promise.all([loadSummary(), loadTables()]);
+            } catch (e) {
+                console.error('Assessment failed', e);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = `<svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg> Run Assessment`;
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            Promise.all([loadSummary(), loadTables()]);
+        });
+    </script>
+</body>
+</html>

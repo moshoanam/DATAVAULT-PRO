@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head th:replace="~{fragments/header :: header}"></head>
+<body class="bg-gray-50">
+    <nav th:replace="~{fragments/navbar :: navbar(activePage='catalog')}"></nav>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        
+        <!-- Page Header -->
+        <div class="mb-8">
+            <h1 class="text-3xl font-bold text-gray-900 mb-2">Data Catalog</h1>
+            <p class="text-gray-600">Browse and manage your data assets</p>
+        </div>
+
+        <!-- Action Bar -->
+        <div class="mb-6 flex justify-between items-center">
+            <div class="flex space-x-4">
+                <select class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary">
+                    <option>All Environments</option>
+                    <option>Production</option>
+                    <option>Staging</option>
+                    <option>Development</option>
+                </select>
+                <select class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary">
+                    <option>All Types</option>
+                    <option>PostgreSQL</option>
+                    <option>MySQL</option>
+                    <option>Oracle</option>
+                </select>
+            </div>
+            <a href="/databases/new" class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-secondary transition">
+                + Add Database
+            </a>
+        </div>
+
+        <!-- Databases Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div th:each="database : ${databases}" class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition cursor-pointer"
+                 th:onclick="'window.location.href=\'/databases/' + ${database.id} + '\''">
+                <div class="flex items-start justify-between mb-4">
+                    <div class="flex-shrink-0 h-12 w-12 rounded-lg bg-gradient-to-br from-primary to-secondary flex items-center justify-center">
+                        <svg class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4" />
+                        </svg>
+                    </div>
+                    <span th:text="${database.type}" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                        PostgreSQL
+                    </span>
+                </div>
+                
+                <h3 th:text="${database.name}" class="text-lg font-semibold text-gray-900 mb-2">database_name</h3>
+                <p th:text="${database.description}" class="text-sm text-gray-600 mb-4 line-clamp-2">Database description</p>
+                
+                <div class="flex items-center justify-between text-sm">
+                    <div class="flex items-center text-gray-500">
+                        <svg class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                        </svg>
+                        <span th:text="${database.tableCount} + ' tables'">0 tables</span>
+                    </div>
+                    <span th:text="${database.environment}" class="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-green-100 text-green-800">
+                        Production
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Empty State -->
+        <div th:if="${databases == null or databases.isEmpty()}" class="text-center py-12">
+            <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4" />
+            </svg>
+            <h3 class="mt-2 text-sm font-medium text-gray-900">No databases</h3>
+            <p class="mt-1 text-sm text-gray-500">Get started by adding a new database.</p>
+            <div class="mt-6">
+                <a href="/databases/new" class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-primary hover:bg-secondary">
+                    + Add Database
+                </a>
+            </div>
+        </div>
+
+    </main>
+
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+</body>
+</html>

@@ -1,0 +1,79 @@
+stages:
+  - build
+  - package
+  - deploy
+
+variables:
+  GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.parallel=false"
+  JAVA_HOME: "/usr/lib/jvm/java-17-openjdk"
+
+# ── Build & Test ─────────────────────────────────────────────
+build:
+  stage: build
+  image: eclipse-temurin:17-jdk-alpine
+  cache:
+    key: "$CI_PROJECT_PATH-gradle"
+    paths:
+      - .gradle/
+      - build/
+  script:
+    - ./gradlew compileJava test --no-daemon
+  artifacts:
+    reports:
+      junit: build/test-results/test/TEST-*.xml
+    paths:
+      - build/classes/
+      - build/resources/
+    expire_in: 1 hour
+
+# ── Jib → push image to GitLab Registry ──────────────────────
+package:
+  stage: package
+  image: eclipse-temurin:17-jdk-alpine
+  cache:
+    key: "$CI_PROJECT_PATH-gradle"
+    paths:
+      - .gradle/
+      - build/
+    policy: pull
+  script:
+    - ./gradlew jib
+      --image="registry.gitlab.com/$CI_PROJECT_PATH/backend:$CI_COMMIT_SHA"
+      -Djib.to.auth.username="$CI_REGISTRY_USER"
+      -Djib.to.auth.password="$CI_REGISTRY_PASSWORD"
+  only:
+    - main
+    - tags
+
+# ── Deploy to dev ─────────────────────────────────────────────
+deploy:dev:
+  stage: deploy
+  image: bitnami/kubectl:latest
+  environment:
+    name: development
+    url: https://dev.datavault.example.com
+  script:
+    - kubectl config use-context $KUBE_CONTEXT_DEV
+    - kubectl kustomize k8s/overlays/dev | kubectl apply -f -
+    - kubectl -n datavault-dev set image deployment/datavault-backend
+        datavault-backend=registry.gitlab.com/$CI_PROJECT_PATH/backend:$CI_COMMIT_SHA
+    - kubectl -n datavault-dev rollout status deployment/datavault-backend --timeout=5m
+  only:
+    - main
+
+# ── Deploy to production (manual gate) ───────────────────────
+deploy:production:
+  stage: deploy
+  image: bitnami/kubectl:latest
+  environment:
+    name: production
+    url: https://datavault.example.com
+  when: manual
+  script:
+    - kubectl config use-context $KUBE_CONTEXT_PROD
+    - kubectl kustomize k8s/overlays/production | kubectl apply -f -
+    - kubectl -n datavault set image deployment/datavault-backend
+        datavault-backend=registry.gitlab.com/$CI_PROJECT_PATH/backend:$CI_COMMIT_SHA
+    - kubectl -n datavault rollout status deployment/datavault-backend --timeout=10m
+  only:
+    - tags

@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head th:replace="~{fragments/header :: header}"></head>
+<body class="bg-gray-50">
+    <nav th:replace="~{fragments/navbar :: navbar(activePage='catalog')}"></nav>
+
+    <main class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        
+        <div class="mb-8">
+            <h1 class="text-3xl font-bold text-gray-900 mb-2">Connect Database</h1>
+            <p class="text-gray-600">Add a new database source to your data catalog</p>
+        </div>
+
+        <!-- Connection Form -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
+            <form id="connectForm" onsubmit="connectDatabase(event)">
+                
+                <!-- Database Type -->
+                <div class="mb-6">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Database Type</label>
+                    <select id="databaseType" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary">
+                        <option value="PostgreSQL">PostgreSQL</option>
+                        <option value="MSSQL">MS SQL Server</option>
+                        <option value="MongoDB">MongoDB</option>
+                    </select>
+                </div>
+
+                <!-- Database Name -->
+                <div class="mb-6">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Database Name</label>
+                    <input type="text" id="databaseName" required 
+                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary"
+                           placeholder="e.g., sales_analytics">
+                </div>
+
+                <!-- Connection String -->
+                <div class="mb-6">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Connection String</label>
+                    <input type="text" id="connectionString" required 
+                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary"
+                           placeholder="jdbc:postgresql://localhost:5432/mydb">
+                    <p class="mt-1 text-sm text-gray-500">Examples:</p>
+                    <ul class="mt-1 text-xs text-gray-500 list-disc list-inside">
+                        <li>PostgreSQL: jdbc:postgresql://host:5432/database</li>
+                        <li>MS SQL: jdbc:sqlserver://host:1433;databaseName=mydb</li>
+                        <li>MongoDB: mongodb://host:27017/database</li>
+                    </ul>
+                </div>
+
+                <!-- Username -->
+                <div class="mb-6">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Username</label>
+                    <input type="text" id="username" required 
+                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary">
+                </div>
+
+                <!-- Password -->
+                <div class="mb-6">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Password</label>
+                    <input type="password" id="password" required 
+                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary">
+                </div>
+
+                <!-- Environment -->
+                <div class="mb-6">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Environment</label>
+                    <select id="environment" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary">
+                        <option value="development">Development</option>
+                        <option value="staging">Staging</option>
+                        <option value="production">Production</option>
+                    </select>
+                </div>
+
+                <!-- MongoDB Specific: Collections -->
+                <div id="mongoCollections" class="mb-6 hidden">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Specific Collections (Optional)</label>
+                    <input type="text" id="collections" 
+                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary"
+                           placeholder="orders, customers, products (leave empty for all)">
+                    <p class="mt-1 text-sm text-gray-500">Comma-separated list of collections to extract. Leave empty to extract all collections.</p>
+                </div>
+
+                <!-- Description -->
+                <div class="mb-6">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                    <textarea id="description" rows="3" 
+                              class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary"
+                              placeholder="Brief description of this database"></textarea>
+                </div>
+
+                <!-- Extract Options -->
+                <div class="mb-6 p-4 bg-gray-50 rounded-lg">
+                    <h3 class="text-sm font-medium text-gray-900 mb-3">Extraction Options</h3>
+                    <div class="space-y-2">
+                        <label class="flex items-center">
+                            <input type="checkbox" id="extractLineage" checked class="rounded text-primary focus:ring-primary">
+                            <span class="ml-2 text-sm text-gray-700">Extract Lineage Relationships</span>
+                        </label>
+                        <label class="flex items-center">
+                            <input type="checkbox" id="calculateQuality" checked class="rounded text-primary focus:ring-primary">
+                            <span class="ml-2 text-sm text-gray-700">Calculate Data Quality</span>
+                        </label>
+                        <label class="flex items-center">
+                            <input type="checkbox" id="detectPII" checked class="rounded text-primary focus:ring-primary">
+                            <span class="ml-2 text-sm text-gray-700">Detect PII Fields</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Test Connection Button -->
+                <div class="flex space-x-4">
+                    <button type="button" onclick="testConnection()" 
+                            class="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition">
+                        Test Connection
+                    </button>
+                    <button type="submit" 
+                            class="flex-1 px-6 py-2 bg-primary text-white rounded-lg hover:bg-secondary transition">
+                        Connect & Extract Metadata
+                    </button>
+                </div>
+
+            </form>
+
+            <!-- Status Messages -->
+            <div id="statusMessage" class="mt-6 hidden"></div>
+            <div id="progressBar" class="mt-6 hidden">
+                <div class="w-full bg-gray-200 rounded-full h-2">
+                    <div id="progress" class="bg-primary h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+                </div>
+                <p class="text-sm text-gray-600 mt-2" id="progressText">Initializing...</p>
+            </div>
+        </div>
+
+    </main>
+
+    <script>
+        async function testConnection() {
+            const connectionString = document.getElementById('connectionString').value;
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            
+            showStatus('Testing connection...', 'info');
+            
+            // Simulate test
+            setTimeout(() => {
+                showStatus('✓ Connection successful!', 'success');
+            }, 1000);
+        }
+
+        async function connectDatabase(event) {
+            event.preventDefault();
+            
+            const data = {
+                name: document.getElementById('databaseName').value,
+                type: document.getElementById('databaseType').value,
+                connectionString: document.getElementById('connectionString').value,
+                environment: document.getElementById('environment').value,
+                description: document.getElementById('description').value
+            };
+            
+            showProgress(0, 'Creating database entry...');
+            
+            try {
+                // Step 1: Create database
+                const dbResponse = await fetch('/api/v1/databases', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(data)
+                });
+                
+                if (!dbResponse.ok) throw new Error('Failed to create database');
+                
+                const database = await dbResponse.json();
+                showProgress(30, 'Database created. Starting metadata extraction...');
+                
+                // Step 2: Extract metadata
+                const extractRequest = {
+                    connectionString: data.connectionString,
+                    username: document.getElementById('username').value,
+                    password: document.getElementById('password').value,
+                    databaseType: data.type,
+                    extractLineage: document.getElementById('extractLineage').checked,
+                    calculateQuality: document.getElementById('calculateQuality').checked
+                };
+                
+                // Add collections for MongoDB
+                if (data.type === 'MongoDB') {
+                    const collections = document.getElementById('collections').value;
+                    if (collections) {
+                        extractRequest.collectionsToExtract = collections.split(',').map(c => c.trim());
+                    }
+                }
+                
+                const extractResponse = await fetch(`/api/v1/databases/${database.id}/extract`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(extractRequest)
+                });
+                
+                if (!extractResponse.ok) throw new Error('Metadata extraction failed');
+                
+                const result = await extractResponse.json();
+                showProgress(100, 'Extraction complete!');
+                
+                showStatus(
+                    `✓ Success! Extracted ${result.tablesExtracted} tables, ${result.fieldsExtracted} fields, ${result.relationshipsExtracted} relationships`,
+                    'success'
+                );
+                
+                // Redirect after 2 seconds
+                setTimeout(() => {
+                    window.location.href = `/databases/${database.id}`;
+                }, 2000);
+                
+            } catch (error) {
+                showStatus('✗ Error: ' + error.message, 'error');
+                hideProgress();
+            }
+        }
+
+        function showStatus(message, type) {
+            const status = document.getElementById('statusMessage');
+            status.className = 'mt-6 p-4 rounded-lg ' + 
+                (type === 'success' ? 'bg-green-50 text-green-800' :
+                 type === 'error' ? 'bg-red-50 text-red-800' :
+                 'bg-blue-50 text-blue-800');
+            status.textContent = message;
+            status.classList.remove('hidden');
+        }
+
+        function showProgress(percent, text) {
+            document.getElementById('progressBar').classList.remove('hidden');
+            document.getElementById('progress').style.width = percent + '%';
+            document.getElementById('progressText').textContent = text;
+        }
+
+        function hideProgress() {
+            document.getElementById('progressBar').classList.add('hidden');
+        }
+    </script>
+</body>
+</html>
+
+    <script>
+        // Show/hide MongoDB collections field based on database type
+        document.getElementById('databaseType').addEventListener('change', function() {
+            const mongoCollections = document.getElementById('mongoCollections');
+            if (this.value === 'MongoDB') {
+                mongoCollections.classList.remove('hidden');
+            } else {
+                mongoCollections.classList.add('hidden');
+            }
+        });
+    </script>

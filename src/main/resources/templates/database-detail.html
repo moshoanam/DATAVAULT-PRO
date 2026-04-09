@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head th:replace="~{fragments/header :: header}"></head>
+<body class="bg-gray-50">
+    <nav th:replace="~{fragments/navbar :: navbar(activePage='catalog')}"></nav>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        
+        <!-- Header with Edit Button -->
+        <div class="mb-8 flex justify-between items-start">
+            <div>
+                <h1 class="text-3xl font-bold text-gray-900 mb-2" th:text="${database.name}">Database Name</h1>
+                <div class="flex items-center space-x-4 text-sm text-gray-600">
+                    <span th:text="${database.type}">PostgreSQL</span>
+                    <span>•</span>
+                    <span th:text="${database.environment}">Production</span>
+                    <span>•</span>
+                    <span th:text="${database.tableCount} + ' tables'">0 tables</span>
+                </div>
+            </div>
+            <div class="flex space-x-3">
+                <button onclick="refreshMetadata()" class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition">
+                    <svg class="inline h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                    Refresh Metadata
+                </button>
+                <button onclick="editDatabase()" class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-secondary transition">
+                    <svg class="inline h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                    </svg>
+                    Edit Database
+                </button>
+            </div>
+        </div>
+
+        <!-- Stats Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <div class="text-sm text-gray-600 mb-1">Tables</div>
+                <div class="text-3xl font-bold text-gray-900" th:text="${database.tableCount}">0</div>
+            </div>
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <div class="text-sm text-gray-600 mb-1">Total Fields</div>
+                <div class="text-3xl font-bold text-gray-900">0</div>
+            </div>
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <div class="text-sm text-gray-600 mb-1">Quality Score</div>
+                <div class="text-3xl font-bold text-green-600">98%</div>
+            </div>
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <div class="text-sm text-gray-600 mb-1">PII Fields</div>
+                <div class="text-3xl font-bold text-red-600">24</div>
+            </div>
+        </div>
+
+        <!-- Tabs -->
+        <div class="mb-6">
+            <div class="border-b border-gray-200">
+                <nav class="-mb-px flex space-x-8">
+                    <button onclick="showTab('tables')" id="tables-tab" class="tab-btn border-b-2 border-primary text-primary py-4 px-1 text-sm font-medium">
+                        Tables
+                    </button>
+                    <button onclick="showTab('lineage')" id="lineage-tab" class="tab-btn border-b-2 border-transparent text-gray-500 hover:text-gray-700 py-4 px-1 text-sm font-medium">
+                        Lineage
+                    </button>
+                    <button onclick="showTab('quality')" id="quality-tab" class="tab-btn border-b-2 border-transparent text-gray-500 hover:text-gray-700 py-4 px-1 text-sm font-medium">
+                        Quality
+                    </button>
+                    <button onclick="showTab('settings')" id="settings-tab" class="tab-btn border-b-2 border-transparent text-gray-500 hover:text-gray-700 py-4 px-1 text-sm font-medium">
+                        Settings
+                    </button>
+                </nav>
+            </div>
+        </div>
+
+        <!-- Tables Tab -->
+        <div id="tables-content" class="tab-content">
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+                    <h2 class="text-lg font-semibold text-gray-900">Tables</h2>
+                    <button onclick="addTable()" class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-secondary transition text-sm">
+                        + Add Table
+                    </button>
+                </div>
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Table Name</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Schema</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Row Count</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Size</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Quality</th>
+                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-200" id="tablesTableBody">
+                        <tr>
+                            <td colspan="6" class="px-6 py-4 text-center text-sm text-gray-500">Loading tables...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Lineage Tab -->
+        <div id="lineage-content" class="tab-content hidden">
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Database Lineage Relationships</h3>
+                <p class="text-gray-600">View all lineage relationships for tables in this database.</p>
+            </div>
+        </div>
+
+        <!-- Quality Tab -->
+        <div id="quality-content" class="tab-content hidden">
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Data Quality Overview</h3>
+                <p class="text-gray-600">Quality metrics for all tables in this database.</p>
+            </div>
+        </div>
+
+        <!-- Settings Tab -->
+        <div id="settings-content" class="tab-content hidden">
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Database Settings</h3>
+                <form id="settingsForm" onsubmit="saveSettings(event)">
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                            <textarea name="description" rows="3" th:text="${database.description}"
+                                      class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary"></textarea>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Owner</label>
+                            <input type="text" name="owner" th:value="${database.owner}"
+                                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Connection String</label>
+                            <input type="text" name="connectionString" th:value="${database.connectionString}"
+                                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary">
+                        </div>
+                        <div class="flex space-x-4">
+                            <button type="submit" class="px-6 py-2 bg-primary text-white rounded-lg hover:bg-secondary transition">
+                                Save Changes
+                            </button>
+                            <button type="button" onclick="deleteDatabase()" class="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition">
+                                Delete Database
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+    </main>
+
+    <script th:inline="javascript">
+        const databaseId = /*[[${database.id}]]*/ 1;
+
+        // Load tables on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            loadTables();
+        });
+
+        function showTab(tabName) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.add('hidden'));
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('border-primary', 'text-primary');
+                btn.classList.add('border-transparent', 'text-gray-500');
+            });
+            
+            // Show selected tab
+            document.getElementById(tabName + '-content').classList.remove('hidden');
+            document.getElementById(tabName + '-tab').classList.add('border-primary', 'text-primary');
+            document.getElementById(tabName + '-tab').classList.remove('border-transparent', 'text-gray-500');
+        }
+
+        async function loadTables() {
+            try {
+                const response = await fetch(`/api/v1/databases/${databaseId}/tables`);
+                const tables = await response.json();
+                
+                const tbody = document.getElementById('tablesTableBody');
+                if (tables.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="6" class="px-6 py-4 text-center text-sm text-gray-500">No tables found</td></tr>';
+                    return;
+                }
+                
+                tbody.innerHTML = tables.map(table => `
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-6 py-4 text-sm font-medium text-gray-900">${table.tableName}</td>
+                        <td class="px-6 py-4 text-sm text-gray-500">${table.schema || 'N/A'}</td>
+                        <td class="px-6 py-4 text-sm text-gray-500">${(table.rowCount || 0).toLocaleString()}</td>
+                        <td class="px-6 py-4 text-sm text-gray-500">${formatBytes(table.sizeBytes || 0)}</td>
+                        <td class="px-6 py-4 text-sm">
+                            <span class="px-2 py-1 rounded-full text-xs font-medium ${getQualityClass(table.dataQualityScore)}">
+                                ${Math.round(table.dataQualityScore || 0)}%
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 text-right text-sm">
+                            <button onclick="viewTable(${table.id})" class="text-primary hover:text-secondary">View</button>
+                        </td>
+                    </tr>
+                `).join('');
+            } catch (error) {
+                console.error('Error loading tables:', error);
+            }
+        }
+
+        async function refreshMetadata() {
+            if (!confirm('This will re-extract all metadata. Continue?')) return;
+            
+            try {
+                const response = await fetch(`/api/v1/databases/${databaseId}/refresh`, {
+                    method: 'POST'
+                });
+                const result = await response.json();
+                alert(result.message);
+                location.reload();
+            } catch (error) {
+                alert('Error refreshing metadata: ' + error.message);
+            }
+        }
+
+        function editDatabase() {
+            showTab('settings');
+        }
+
+        async function saveSettings(event) {
+            event.preventDefault();
+            const formData = new FormData(event.target);
+            
+            try {
+                const response = await fetch(`/api/v1/databases/${databaseId}`, {
+                    method: 'PUT',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(Object.fromEntries(formData))
+                });
+                
+                if (response.ok) {
+                    alert('Settings saved successfully!');
+                    location.reload();
+                }
+            } catch (error) {
+                alert('Error saving settings: ' + error.message);
+            }
+        }
+
+        async function deleteDatabase() {
+            if (!confirm('Are you sure you want to delete this database? This action cannot be undone.')) return;
+            
+            try {
+                const response = await fetch(`/api/v1/databases/${databaseId}`, {
+                    method: 'DELETE'
+                });
+                
+                if (response.ok) {
+                    alert('Database deleted successfully!');
+                    window.location.href = '/catalog';
+                }
+            } catch (error) {
+                alert('Error deleting database: ' + error.message);
+            }
+        }
+
+        function addTable() {
+            // Open modal or redirect to add table page
+            alert('Add Table - Use API: POST /api/v1/tables');
+        }
+
+        function viewTable(tableId) {
+            window.location.href = `/tables/${tableId}`;
+        }
+
+        function formatBytes(bytes) {
+            if (bytes === 0) return '0 B';
+            const k = 1024;
+            const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+        }
+
+        function getQualityClass(score) {
+            if (score >= 90) return 'bg-green-100 text-green-800';
+            if (score >= 70) return 'bg-yellow-100 text-yellow-800';
+            return 'bg-red-100 text-red-800';
+        }
+    </script>
+</body>
+</html>

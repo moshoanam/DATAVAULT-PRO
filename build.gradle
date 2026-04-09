@@ -1,0 +1,126 @@
+plugins {
+    id 'java'
+    id 'org.springframework.boot' version '3.2.0'
+    id 'io.spring.dependency-management' version '1.1.4'
+    id 'com.google.cloud.tools.jib' version '3.4.0'
+}
+
+group = 'com.datavault'
+version = '2.3.0'
+sourceCompatibility = '21'
+
+configurations {
+    compileOnly {
+        extendsFrom annotationProcessor
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+ext {
+    keycloakVersion = '23.0.1'
+    mapstructVersion = '1.5.5.Final'
+    springdocVersion = '2.3.0'
+}
+
+dependencies {
+    // Spring Boot Starters
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    implementation 'org.springframework.boot:spring-boot-starter-security'
+    implementation 'org.springframework.boot:spring-boot-starter-validation'
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+    implementation 'org.springframework.boot:spring-boot-starter-cache'
+    implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
+    
+    // Caffeine - High-performance in-memory cache (OS independent)
+    implementation 'com.github.ben-manes.caffeine:caffeine:3.1.8'
+    
+    // Database Drivers
+    runtimeOnly 'org.postgresql:postgresql'
+    runtimeOnly 'com.h2database:h2'
+    runtimeOnly 'com.microsoft.sqlserver:mssql-jdbc:12.4.2.jre11'
+    implementation 'org.mongodb:mongodb-driver-sync:4.11.1'
+    implementation 'org.apache.iceberg:iceberg-core:1.4.2'
+    implementation 'org.apache.hadoop:hadoop-common:3.3.6'
+    implementation 'org.flywaydb:flyway-core'
+    
+    // Database utilities
+    implementation 'com.zaxxer:HikariCP'
+    
+    // OpenAPI/Swagger
+    implementation "org.springdoc:springdoc-openapi-starter-webmvc-ui:${springdocVersion}"
+    
+    // Utilities
+    compileOnly 'org.projectlombok:lombok'
+    annotationProcessor 'org.projectlombok:lombok'
+    implementation "org.mapstruct:mapstruct:${mapstructVersion}"
+    annotationProcessor "org.mapstruct:mapstruct-processor:${mapstructVersion}"
+    
+    // Monitoring
+    implementation 'io.micrometer:micrometer-registry-prometheus'
+    
+    // Testing
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'org.springframework.security:spring-security-test'
+}
+
+tasks.named('test') {
+    useJUnitPlatform()
+}
+
+// Jib Configuration - NO DOCKER REQUIRED!
+jib {
+    from {
+        image = 'eclipse-temurin:21-jre-alpine'
+    }
+    
+    to {
+        image = "registry.gitlab.com/${System.getenv('CI_PROJECT_PATH') ?: 'yourorg/datavault-pro'}/backend"
+        tags = [version, 'latest', System.getenv('CI_COMMIT_SHA') ?: 'dev']
+        if (System.getenv('CI_REGISTRY_USER')) {
+            auth {
+                username = System.getenv('CI_REGISTRY_USER')
+                password = System.getenv('CI_REGISTRY_PASSWORD')
+            }
+        }
+    }
+    
+    container {
+        jvmFlags = ['-Xms512m', '-Xmx2g', '-XX:+UseG1GC']
+        mainClass = 'com.datavault.DataVaultApplication'
+        ports = ['8080']
+        labels = [
+            'app.name': 'datavault-pro',
+            'app.version': version,
+            'maintainer': 'platform-team@example.com'
+        ]
+        environment = [
+            'SPRING_PROFILES_ACTIVE': 'production'
+        ]
+        creationTime = 'USE_CURRENT_TIMESTAMP'
+        user = '1000:1000'
+    }
+}
+
+// Custom tasks
+task copyResources(type: Copy) {
+    from 'src/main/resources'
+    into 'build/resources/main'
+}
+
+task showVersion {
+    doLast {
+        println "DataVault Pro version: ${version}"
+        println "Java version: ${sourceCompatibility}"
+        println "Spring Boot version: 3.2.0"
+    }
+}
+
+// Gradle Wrapper
+wrapper {
+    gradleVersion = '8.5'
+    distributionType = Wrapper.DistributionType.BIN
+}

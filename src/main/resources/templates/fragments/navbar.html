@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+    <nav th:fragment="navbar(activePage)" class="bg-white border-b border-gray-200 sticky top-0 z-50 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0 flex items-center">
+                        <a href="/" class="flex items-center">
+                            <svg class="h-8 w-8 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4" />
+                            </svg>
+                            <span class="ml-3 text-xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">DataVault Pro</span>
+                        </a>
+                    </div>
+                    <div class="hidden md:ml-10 md:flex md:space-x-8">
+                        <a href="/" th:classappend="${activePage == 'home' ? 'text-primary border-primary' : 'text-gray-500 hover:text-primary'}" class="border-b-2 border-transparent px-3 py-2 text-sm font-medium transition">
+                            Dashboard
+                        </a>
+                        <a href="/catalog" th:classappend="${activePage == 'catalog' ? 'text-primary border-primary' : 'text-gray-500 hover:text-primary'}" class="border-b-2 border-transparent px-3 py-2 text-sm font-medium transition">
+                            Catalog
+                        </a>
+                        <a href="/lineage" th:classappend="${activePage == 'lineage' ? 'text-primary border-primary' : 'text-gray-500 hover:text-primary'}" class="border-b-2 border-transparent px-3 py-2 text-sm font-medium transition">
+                            Lineage
+                        </a>
+                        <a href="/glossary" th:classappend="${activePage == 'glossary' ? 'text-primary border-primary' : 'text-gray-500 hover:text-primary'}" class="border-b-2 border-transparent px-3 py-2 text-sm font-medium transition">
+                            Glossary
+                        </a>
+                        <a href="/governance" th:classappend="${activePage == 'governance' ? 'text-primary border-primary' : 'text-gray-500 hover:text-primary'}" class="border-b-2 border-transparent px-3 py-2 text-sm font-medium transition">
+                            Governance
+                        </a>
+                        <a href="/quality" th:classappend="${activePage == 'quality' ? 'text-primary border-primary' : 'text-gray-500 hover:text-primary'}" class="border-b-2 border-transparent px-3 py-2 text-sm font-medium transition">
+                            Quality
+                        </a>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <div class="relative">
+                        <input type="search" placeholder="Search metadata..." 
+                               class="w-64 px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-primary focus:border-transparent text-sm"
+                               id="globalSearch"
+                               onkeyup="handleSearch(event)">
+                    </div>
+                    <div class="flex items-center space-x-2 p-2 rounded-lg bg-gray-100">
+                        <div class="w-8 h-8 rounded-full bg-gradient-to-r from-primary to-secondary flex items-center justify-center text-white font-semibold text-sm">
+                            A
+                        </div>
+                        <span class="text-sm font-medium text-gray-700">Admin</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+    
+    <script>
+        function handleSearch(event) {
+            if (event.key === 'Enter') {
+                const query = event.target.value;
+                if (query.length > 0) {
+                    window.location.href = '/search?query=' + encodeURIComponent(query);
+                }
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,15 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+bases:
+  - ../../base
+
+namespace: datavault-dev
+
+patches:
+  - path: deployment-patch.yaml
+  - path: configmap-patch.yaml
+
+images:
+  - name: registry.gitlab.com/yourorg/datavault-pro/backend
+    newTag: dev
