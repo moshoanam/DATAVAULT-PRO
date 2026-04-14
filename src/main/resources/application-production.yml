@@ -1,0 +1,71 @@
+# ── Production profile ───────────────────────────────────────────────────────
+# All sensitive values MUST be supplied via environment variables.
+# Do NOT commit actual credentials — this file contains only structure.
+
+spring:
+  datasource:
+    # Required env vars: DATABASE_URL, DATABASE_USERNAME, DATABASE_PASSWORD
+    url: ${DATABASE_URL}
+    username: ${DATABASE_USERNAME}
+    password: ${DATABASE_PASSWORD}
+    hikari:
+      maximum-pool-size: ${DB_POOL_SIZE:20}
+      minimum-idle: ${DB_POOL_MIN_IDLE:5}
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+
+  jpa:
+    hibernate:
+      ddl-auto: validate   # Never auto-modify schema in production
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: false
+
+  thymeleaf:
+    cache: true            # Template caching enabled
+
+  # H2 console must never be exposed in production
+  h2:
+    console:
+      enabled: false
+
+server:
+  port: ${PORT:8080}
+  compression:
+    enabled: true
+    min-response-size: 1024
+  error:
+    include-stacktrace: never
+    include-message: never
+
+logging:
+  level:
+    root: WARN
+    com.datavault: INFO
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: never  # Don't expose internals publicly
+
+springdoc:
+  swagger-ui:
+    enabled: false         # Disable Swagger UI in production
+  api-docs:
+    enabled: false
+
+app:
+  cors:
+    # Comma-separated list of allowed frontend origins
+    allowed-origins: ${ALLOWED_ORIGINS:https://localhost:8080}
+  metadata-sync:
+    enabled: ${METADATA_SYNC_ENABLED:true}
+    cron: ${METADATA_SYNC_CRON:0 0 2 * * *}   # 2 AM daily

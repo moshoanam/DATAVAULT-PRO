@@ -1,0 +1,62 @@
+# ── Build outputs ─────────────────────────────────────────────────────────────
+build/
+out/
+target/
+*.war
+*.ear
+!gradle/wrapper/gradle-wrapper.jar
+
+# ── Gradle ────────────────────────────────────────────────────────────────────
+.gradle/
+gradle-wrapper.jar
+local.properties
+
+# ── IDE ───────────────────────────────────────────────────────────────────────
+.idea/
+*.iml
+*.iws
+*.ipr
+.classpath
+.project
+.settings/
+.vscode/
+*.suo
+*.user
+nbproject/
+*.swp
+*~
+
+# ── OS ────────────────────────────────────────────────────────────────────────
+.DS_Store
+.DS_Store?
+._*
+Thumbs.db
+ehthumbs.db
+
+# ── Environment / Secrets (NEVER commit these) ────────────────────────────────
+.env
+.env.local
+.env.*.local
+*.secret
+secrets/
+application-local.yml
+application-local.yaml
+application-secret.yml
+application-secret.yaml
+application-production.properties
+
+# ── Logs ──────────────────────────────────────────────────────────────────────
+*.log
+*.log.*
+logs/
+spring.pid
+
+# ── Java / Kotlin compiled ────────────────────────────────────────────────────
+*.class
+hs_err_pid*
+
+# ── Test coverage ─────────────────────────────────────────────────────────────
+*.exec
+jacoco.exec
+htmlReport/
+test-results/

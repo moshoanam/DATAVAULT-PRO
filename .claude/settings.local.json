@@ -68,7 +68,26 @@
       "Bash(python3 -c \"import ast; ast.parse\\(open\\(''v100_regime_detection.py''\\).read\\(\\)\\); print\\(''Syntax OK''\\)\")",
       "Bash(python3 run_performance_test.py)",
       "Bash(python3 build_notebook.py)",
-      "Bash(ls -lh /Users/mastermoshoana/Downloads/V100-Regime-Detection/*.ipynb /Users/mastermoshoana/Downloads/V100-Regime-Detection/*.py)"
+      "Bash(ls -lh /Users/mastermoshoana/Downloads/V100-Regime-Detection/*.ipynb /Users/mastermoshoana/Downloads/V100-Regime-Detection/*.py)",
+      "Read(//tmp/**)",
+      "Read(//Users/mastermoshoana/jdk17/Contents/Home/bin/**)",
+      "Bash(export PATH=$JAVA_HOME/bin:$PATH)",
+      "Bash(/Users/mastermoshoana/.gradle/wrapper/dists/gradle-9.2.0-bin/11i5gvueggl8a5cioxuftxrik/gradle-9.2.0/bin/gradle compileJava)",
+      "Bash(curl -L \"https://services.gradle.org/distributions/gradle-8.5-bin.zip\" -o /tmp/gradle-8.5-bin.zip)",
+      "Bash(unzip -q /tmp/gradle-8.5-bin.zip -d $HOME/gradle-installs/)",
+      "Read(//Users/mastermoshoana/Downloads/DATAVAULT-PRO-COMPLETE/$HOME/gradle-installs/gradle-8.5/**)",
+      "Bash(export PATH=$JAVA_HOME/bin:$HOME/gradle-installs/gradle-8.5/bin:$PATH)",
+      "Bash(find /Users/mastermoshoana/Downloads/DATAVAULT-PRO-COMPLETE/src/main/java/com/datavault/controller -type f -name *.java)",
+      "Bash(curl -s http://localhost:8081/lineage)",
+      "Bash(curl -s http://localhost:8081/migration)",
+      "Bash(curl -s http://localhost:8081/)",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(f''''{len\\(d\\)} databases in API''''\\)\")",
+      "Bash(curl -s 'http://localhost:8081/api/v1/databases')",
+      "Bash(curl -s 'http://localhost:8081/api/v1/governance/alerts')",
+      "Bash(curl -s 'http://localhost:8081/api/v1/governance/quality-summary')",
+      "Bash(curl -s 'http://localhost:8081/api/v1/migration/analyze' -X POST -H 'Content-Type: application/json' -d '{\"\"\"\"connectionString\"\"\"\":\"\"\"\"test\"\"\"\",\"\"\"\"username\"\"\"\":\"\"\"\"\"\"\"\",\"\"\"\"password\"\"\"\":\"\"\"\"\"\"\"\",\"\"\"\"schema\"\"\"\":\"\"\"\"dbo\"\"\"\"}')",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(''''migration endpoint OK, success='''', d.get\\(''''success''''\\)\\)\")",
+      "Bash(gradle clean:*)"
     ]
   }
 }

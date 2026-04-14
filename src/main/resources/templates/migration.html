@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head th:replace="~{fragments/header :: header}"></head>
+<body class="bg-gray-50">
+    <nav th:replace="~{fragments/navbar :: navbar(activePage='migration')}"></nav>
+
+    <main class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+        <!-- Header -->
+        <div class="mb-8">
+            <div class="flex items-center gap-3 mb-2">
+                <div class="p-2 rounded-lg bg-blue-100">
+                    <svg class="h-6 w-6 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/>
+                    </svg>
+                </div>
+                <h1 class="text-3xl font-bold text-gray-900">MS SQL → PostgreSQL Migration</h1>
+            </div>
+            <p class="text-gray-600 ml-14">Connect to a SQL Server source, preview the type-mapped schema, then download or apply the PostgreSQL DDL.</p>
+        </div>
+
+        <!-- Stepper -->
+        <div class="flex items-center gap-0 mb-8" id="stepper">
+            <div class="step-item active" data-step="1">
+                <div class="step-circle">1</div><span class="step-label">Source</span>
+            </div>
+            <div class="step-connector"></div>
+            <div class="step-item" data-step="2">
+                <div class="step-circle">2</div><span class="step-label">Target</span>
+            </div>
+            <div class="step-connector"></div>
+            <div class="step-item" data-step="3">
+                <div class="step-circle">3</div><span class="step-label">Analyse</span>
+            </div>
+            <div class="step-connector"></div>
+            <div class="step-item" data-step="4">
+                <div class="step-circle">4</div><span class="step-label">Generate</span>
+            </div>
+        </div>
+
+        <!-- ── STEP 1: Source ──────────────────────────────────────────────── -->
+        <div id="step-1" class="step-panel">
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
+                <h2 class="text-xl font-semibold text-gray-900 mb-6">SQL Server Source</h2>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                    <div class="sm:col-span-2">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Connection String *</label>
+                        <input id="src-conn" type="text" placeholder="jdbc:sqlserver://host:1433;databaseName=mydb" required
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary">
+                        <p class="text-xs text-gray-400 mt-1">For Windows Auth append <code class="bg-gray-100 px-1 rounded">integratedSecurity=true;</code></p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Username</label>
+                        <input id="src-user" type="text" placeholder="sa"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                        <input id="src-pass" type="password"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Source Schema</label>
+                        <input id="src-schema" type="text" value="dbo" placeholder="dbo"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary">
+                    </div>
+                    <div class="flex items-end">
+                        <label class="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+                            <input type="checkbox" id="src-winauth" onchange="toggleWinAuth()"
+                                   class="w-4 h-4 rounded text-primary focus:ring-primary">
+                            Use Windows Authentication
+                        </label>
+                    </div>
+                </div>
+                <div class="mt-6 flex justify-end">
+                    <button onclick="goToStep(2)"
+                            class="px-6 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-secondary transition">
+                        Next: Target →
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ── STEP 2: Target ──────────────────────────────────────────────── -->
+        <div id="step-2" class="step-panel hidden">
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
+                <h2 class="text-xl font-semibold text-gray-900 mb-6">PostgreSQL Target Options</h2>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Target Schema</label>
+                        <input id="tgt-schema" type="text" value="public" placeholder="public"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary">
+                    </div>
+                    <div class="flex flex-col gap-3 pt-5">
+                        <label class="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+                            <input type="checkbox" id="opt-indexes" checked class="w-4 h-4 rounded text-primary">
+                            Include indexes
+                        </label>
+                        <label class="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+                            <input type="checkbox" id="opt-comments" checked class="w-4 h-4 rounded text-primary">
+                            Include table comments
+                        </label>
+                        <label class="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+                            <input type="checkbox" id="opt-drop" class="w-4 h-4 rounded text-primary">
+                            DROP TABLE IF EXISTS before each CREATE
+                        </label>
+                    </div>
+                    <div class="sm:col-span-2">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Specific Tables <span class="text-gray-400 font-normal">(leave blank for all)</span></label>
+                        <textarea id="tgt-tables" rows="3" placeholder="orders&#10;customers&#10;order_items"
+                                  class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary resize-none"></textarea>
+                    </div>
+                </div>
+                <div class="mt-6 flex justify-between">
+                    <button onclick="goToStep(1)" class="px-5 py-2 border border-gray-300 text-gray-700 rounded-lg text-sm hover:bg-gray-50">← Back</button>
+                    <button onclick="runAnalysis()" class="px-6 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-secondary transition flex items-center gap-2">
+                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+                        Analyse Schema →
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ── STEP 3: Analyse ─────────────────────────────────────────────── -->
+        <div id="step-3" class="step-panel hidden">
+            <div id="analysis-loading" class="bg-white rounded-xl border border-gray-200 p-16 text-center hidden">
+                <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-primary mx-auto mb-4"></div>
+                <p class="text-gray-600 text-sm">Connecting and analysing schema…</p>
+            </div>
+            <div id="analysis-result" class="hidden">
+                <!-- Summary bar -->
+                <div class="grid grid-cols-3 gap-4 mb-6">
+                    <div class="bg-white rounded-xl border border-gray-200 p-5 text-center">
+                        <p id="an-tables"  class="text-3xl font-bold text-gray-900">0</p>
+                        <p class="text-sm text-gray-500 mt-1">Tables</p>
+                    </div>
+                    <div class="bg-white rounded-xl border border-gray-200 p-5 text-center">
+                        <p id="an-columns" class="text-3xl font-bold text-gray-900">0</p>
+                        <p class="text-sm text-gray-500 mt-1">Columns</p>
+                    </div>
+                    <div class="bg-white rounded-xl border border-gray-200 p-5 text-center">
+                        <p id="an-warnings" class="text-3xl font-bold text-yellow-600">0</p>
+                        <p class="text-sm text-gray-500 mt-1">Warnings</p>
+                    </div>
+                </div>
+                <!-- Warnings -->
+                <div id="warning-box" class="hidden mb-4 bg-yellow-50 border border-yellow-200 rounded-xl p-4">
+                    <p class="text-sm font-medium text-yellow-800 mb-2">⚠ Type mapping warnings — review before applying:</p>
+                    <ul id="warning-list" class="text-xs text-yellow-700 space-y-1 list-disc list-inside"></ul>
+                </div>
+                <!-- Per-table mapping table -->
+                <div class="bg-white rounded-xl border border-gray-200 overflow-hidden mb-6">
+                    <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+                        <h3 class="font-semibold text-gray-900">Type Mapping Preview</h3>
+                        <input id="tableFilter" type="text" placeholder="Filter tables…" onkeyup="filterTables()"
+                               class="px-3 py-1.5 border border-gray-200 rounded-lg text-sm w-48">
+                    </div>
+                    <div id="table-accordion" class="divide-y divide-gray-100 max-h-[480px] overflow-y-auto"></div>
+                </div>
+                <div class="flex justify-between">
+                    <button onclick="goToStep(2)" class="px-5 py-2 border border-gray-300 text-gray-700 rounded-lg text-sm hover:bg-gray-50">← Back</button>
+                    <button onclick="goToStep(4); generateDdl()" class="px-6 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-secondary transition">
+                        Generate DDL →
+                    </button>
+                </div>
+            </div>
+            <div id="analysis-error" class="hidden bg-red-50 border border-red-200 rounded-xl p-6 text-red-700 text-sm"></div>
+        </div>
+
+        <!-- ── STEP 4: Generate ────────────────────────────────────────────── -->
+        <div id="step-4" class="step-panel hidden">
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+                    <h2 class="text-xl font-semibold text-gray-900">Generated PostgreSQL DDL</h2>
+                    <div class="flex gap-2">
+                        <button onclick="copyDdl()" class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg text-sm hover:bg-gray-50 flex items-center gap-2">
+                            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                            Copy
+                        </button>
+                        <button onclick="downloadDdl()" class="px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-secondary flex items-center gap-2">
+                            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                            Download .sql
+                        </button>
+                    </div>
+                </div>
+                <div id="ddl-loading" class="p-16 text-center hidden">
+                    <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-primary mx-auto mb-4"></div>
+                    <p class="text-gray-600 text-sm">Generating DDL…</p>
+                </div>
+                <pre id="ddl-output" class="p-6 text-xs font-mono text-gray-800 bg-gray-900 text-green-300 overflow-auto max-h-[560px] whitespace-pre leading-5"></pre>
+                <div id="ddl-error" class="hidden p-6 text-red-700 text-sm"></div>
+            </div>
+            <div class="mt-4 flex justify-between">
+                <button onclick="goToStep(3)" class="px-5 py-2 border border-gray-300 text-gray-700 rounded-lg text-sm hover:bg-gray-50">← Back to Analysis</button>
+                <div class="text-xs text-gray-400 flex items-center gap-1">
+                    <svg class="h-4 w-4 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+                    Passwords are never stored or transmitted beyond this session
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <style>
+        .step-item { display:flex; flex-direction:column; align-items:center; gap:4px; flex:0 0 auto; }
+        .step-circle { width:32px;height:32px;border-radius:50%;border:2px solid #d1d5db;background:white;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;color:#6b7280;transition:all .2s; }
+        .step-label  { font-size:11px;color:#6b7280;white-space:nowrap;font-weight:500; }
+        .step-connector { flex:1;height:2px;background:#e5e7eb;min-width:24px;margin-bottom:16px; }
+        .step-item.active .step-circle { border-color:#6366f1;background:#6366f1;color:white; }
+        .step-item.done   .step-circle { border-color:#22c55e;background:#22c55e;color:white; }
+        .step-item.active .step-label, .step-item.done .step-label { color:#374151; }
+    </style>
+
+    <script>
+        let currentStep = 1;
+        let analysisData = null;
+        let allTableData = [];
+
+        // ── Step navigation ─────────────────────────────────────────────────
+        function goToStep(n) {
+            for (let i = 1; i <= 4; i++) {
+                document.getElementById('step-' + i).classList.add('hidden');
+                const item = document.querySelector(`.step-item[data-step="${i}"]`);
+                item.classList.remove('active', 'done');
+                if (i < n) item.classList.add('done');
+                else if (i === n) item.classList.add('active');
+            }
+            document.getElementById('step-' + n).classList.remove('hidden');
+            currentStep = n;
+        }
+
+        function toggleWinAuth() {
+            const checked = document.getElementById('src-winauth').checked;
+            document.getElementById('src-user').disabled = checked;
+            document.getElementById('src-pass').disabled = checked;
+            ['src-user','src-pass'].forEach(id => {
+                document.getElementById(id).classList.toggle('opacity-50', checked);
+            });
+            if (checked) {
+                const cs = document.getElementById('src-conn');
+                if (cs.value && !cs.value.toLowerCase().includes('integratedsecurity'))
+                    cs.value = cs.value.replace(/;?\s*$/, '') + ';integratedSecurity=true;';
+            }
+        }
+
+        // ── Step 3: Analyse ─────────────────────────────────────────────────
+        async function runAnalysis() {
+            goToStep(3);
+            show('analysis-loading'); hide('analysis-result'); hide('analysis-error');
+
+            const tables = document.getElementById('tgt-tables').value
+                .split('\n').map(s => s.trim()).filter(Boolean);
+
+            const body = {
+                connectionString: document.getElementById('src-conn').value,
+                username:         document.getElementById('src-user').value,
+                password:         document.getElementById('src-pass').value,
+                schema:           document.getElementById('src-schema').value || 'dbo',
+                tables
+            };
+
+            try {
+                const res = await fetch('/api/v1/migration/analyze', {
+                    method:'POST', headers:{'Content-Type':'application/json'},
+                    body: JSON.stringify(body)
+                });
+                const data = await res.json();
+                hide('analysis-loading');
+                if (!data.success) throw new Error(data.error ?? 'Analysis failed');
+
+                analysisData = data;
+                allTableData = data.tables ?? [];
+
+                document.getElementById('an-tables').textContent  = data.tableCount ?? 0;
+                document.getElementById('an-columns').textContent = data.totalColumns ?? 0;
+                document.getElementById('an-warnings').textContent = (data.warnings ?? []).length;
+
+                const wb = document.getElementById('warning-box');
+                if ((data.warnings ?? []).length) {
+                    wb.classList.remove('hidden');
+                    document.getElementById('warning-list').innerHTML =
+                        data.warnings.map(w => `<li>${esc(w)}</li>`).join('');
+                } else { wb.classList.add('hidden'); }
+
+                renderTableAccordion(allTableData);
+                show('analysis-result');
+            } catch(e) {
+                hide('analysis-loading');
+                show('analysis-error');
+                document.getElementById('analysis-error').textContent = '✗ ' + e.message;
+            }
+        }
+
+        function renderTableAccordion(tables) {
+            document.getElementById('table-accordion').innerHTML = tables.map(t => `
+                <details class="group">
+                    <summary class="flex items-center justify-between px-6 py-3 cursor-pointer hover:bg-gray-50 list-none">
+                        <span class="font-medium text-sm text-gray-900">${esc(t.tableName)}</span>
+                        <span class="text-xs text-gray-400">${t.columnCount} columns</span>
+                    </summary>
+                    <table class="min-w-full text-xs border-t border-gray-100">
+                        <thead class="bg-gray-50 text-gray-400">
+                            <tr>
+                                <th class="px-6 py-2 text-left">Column</th>
+                                <th class="px-6 py-2 text-left">MS SQL Type</th>
+                                <th class="px-6 py-2 text-left">→ PostgreSQL Type</th>
+                                <th class="px-6 py-2 text-left">Nullable</th>
+                                <th class="px-6 py-2 text-left">Note</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-50">
+                            ${(t.columns ?? []).map(c => `
+                            <tr class="${c.needsReview ? 'bg-yellow-50' : 'hover:bg-gray-50'}">
+                                <td class="px-6 py-1.5 font-mono text-gray-800">${esc(c.name)}</td>
+                                <td class="px-6 py-1.5 font-mono text-gray-500">${esc(c.mssqlType)}</td>
+                                <td class="px-6 py-1.5 font-mono font-medium" style="color:#0033A0">${esc(c.pgType)}</td>
+                                <td class="px-6 py-1.5">${c.nullable ? '<span class="text-gray-400">NULL</span>' : '<span class="text-gray-700">NOT NULL</span>'}</td>
+                                <td class="px-6 py-1.5">${c.needsReview ? '<span class="text-yellow-600 text-xs">⚠ review</span>' : ''}</td>
+                            </tr>`).join('')}
+                        </tbody>
+                    </table>
+                </details>`).join('');
+        }
+
+        function filterTables() {
+            const q = document.getElementById('tableFilter').value.toLowerCase();
+            renderTableAccordion(q ? allTableData.filter(t => t.tableName.toLowerCase().includes(q)) : allTableData);
+        }
+
+        // ── Step 4: Generate DDL ────────────────────────────────────────────
+        async function generateDdl() {
+            show('ddl-loading'); hide('ddl-error');
+            document.getElementById('ddl-output').textContent = '';
+
+            const tables = document.getElementById('tgt-tables').value
+                .split('\n').map(s => s.trim()).filter(Boolean);
+
+            const body = {
+                connectionString: document.getElementById('src-conn').value,
+                username:         document.getElementById('src-user').value,
+                password:         document.getElementById('src-pass').value,
+                sourceSchema:     document.getElementById('src-schema').value || 'dbo',
+                targetSchema:     document.getElementById('tgt-schema').value || 'public',
+                tables,
+                includeIndexes:   document.getElementById('opt-indexes').checked,
+                includeComments:  document.getElementById('opt-comments').checked,
+                dropIfExists:     document.getElementById('opt-drop').checked
+            };
+
+            try {
+                const res = await fetch('/api/v1/migration/generate-ddl', {
+                    method:'POST', headers:{'Content-Type':'application/json'},
+                    body: JSON.stringify(body)
+                });
+                const ddl = await res.text();
+                hide('ddl-loading');
+                document.getElementById('ddl-output').textContent = ddl;
+            } catch(e) {
+                hide('ddl-loading');
+                show('ddl-error');
+                document.getElementById('ddl-error').textContent = '✗ ' + e.message;
+            }
+        }
+
+        function copyDdl() {
+            const text = document.getElementById('ddl-output').textContent;
+            navigator.clipboard.writeText(text).then(() => {
+                const btn = event.target.closest('button');
+                const orig = btn.innerHTML;
+                btn.innerHTML = '<svg class="h-4 w-4 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg> Copied!';
+                setTimeout(() => { btn.innerHTML = orig; }, 2000);
+            });
+        }
+
+        async function downloadDdl() {
+            const tables = document.getElementById('tgt-tables').value
+                .split('\n').map(s => s.trim()).filter(Boolean);
+            const body = {
+                connectionString: document.getElementById('src-conn').value,
+                username:         document.getElementById('src-user').value,
+                password:         document.getElementById('src-pass').value,
+                sourceSchema:     document.getElementById('src-schema').value || 'dbo',
+                targetSchema:     document.getElementById('tgt-schema').value || 'public',
+                tables,
+                includeIndexes:   document.getElementById('opt-indexes').checked,
+                includeComments:  document.getElementById('opt-comments').checked,
+                dropIfExists:     document.getElementById('opt-drop').checked
+            };
+            const res  = await fetch('/api/v1/migration/download-ddl', {
+                method:'POST', headers:{'Content-Type':'application/json'},
+                body: JSON.stringify(body)
+            });
+            const blob = await res.blob();
+            const cd   = res.headers.get('Content-Disposition') ?? '';
+            const name = (cd.match(/filename="([^"]+)"/) ?? [])[1] ?? 'migration.sql';
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob); a.download = name; a.click();
+        }
+
+        function show(id) { document.getElementById(id)?.classList.remove('hidden'); }
+        function hide(id) { document.getElementById(id)?.classList.add('hidden'); }
+        function esc(s)   { return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+    </script>
+</body>
+</html>

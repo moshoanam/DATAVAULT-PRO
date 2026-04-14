@@ -22,10 +22,24 @@ public class MSSQLAdapter implements DatabaseAdapter {
         return "MSSQL";
     }
 
+    /** Returns true when the connection string carries Windows / Integrated Security. */
+    private boolean isWindowsAuth(String connectionString) {
+        if (connectionString == null) return false;
+        String lower = connectionString.toLowerCase();
+        return lower.contains("integratedsecurity=true")
+            || lower.contains("integrated security=true")
+            || lower.contains("authentication=activedirectoryintegrated");
+    }
+
     @Override
     public boolean testConnection(String connectionString, String username, String password) {
-        try (Connection conn = DriverManager.getConnection(connectionString, username, password)) {
-            return conn.isValid(5);
+        try {
+            Connection conn = isWindowsAuth(connectionString)
+                ? DriverManager.getConnection(connectionString)
+                : DriverManager.getConnection(connectionString, username, password);
+            boolean valid = conn.isValid(5);
+            conn.close();
+            return valid;
         } catch (Exception e) {
             log.error("MS SQL connection test failed: {}", e.getMessage());
             return false;
@@ -34,6 +48,10 @@ public class MSSQLAdapter implements DatabaseAdapter {
 
     @Override
     public Connection getConnection(String connectionString, String username, String password) throws Exception {
+        if (isWindowsAuth(connectionString)) {
+            log.info("MS SQL: using Windows / Integrated Security authentication");
+            return DriverManager.getConnection(connectionString);
+        }
         return DriverManager.getConnection(connectionString, username, password);
     }
 

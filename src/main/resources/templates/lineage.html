@@ -1,157 +1,642 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org" lang="en">
-<head th:replace="~{fragments/header :: header}"></head>
+<head th:replace="~{fragments/header :: header}">
+    <script type="module">import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs'; window._mermaid = mermaid; mermaid.initialize({startOnLoad:false,theme:'default',er:{diagramPadding:20,layoutDirection:'TB',minEntityWidth:100,useMaxWidth:true}});</script>
+</head>
 <body class="bg-gray-50">
     <nav th:replace="~{fragments/navbar :: navbar(activePage='lineage')}"></nav>
 
     <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        
-        <!-- Page Header -->
-        <div class="mb-8">
-            <h1 class="text-3xl font-bold text-gray-900 mb-2">Data Lineage</h1>
-            <p class="text-gray-600">Trace data flow from source to consumption</p>
-        </div>
 
-        <!-- Search Field -->
-        <div class="mb-6 bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <label class="block text-sm font-medium text-gray-700 mb-2">Select Field to Trace</label>
-            <div class="flex space-x-4">
-                <input type="text" placeholder="Search for a field (e.g., customer_email, order_id)..." 
-                       class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary"
-                       id="lineageSearch">
-                <button onclick="searchLineage()" class="px-6 py-2 bg-primary text-white rounded-lg hover:bg-secondary transition">
-                    Trace Lineage
+        <div class="mb-6 flex items-center justify-between flex-wrap gap-3">
+            <div>
+                <h1 class="text-3xl font-bold text-gray-900">Lineage &amp; Schema</h1>
+                <p class="text-gray-600 mt-1">ERD diagrams, data flow lineage, and schema explorer</p>
+            </div>
+            <div class="flex gap-2">
+                <button onclick="exportDiagram()" class="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg text-sm hover:bg-gray-50 transition">
+                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                    Export SVG
                 </button>
             </div>
         </div>
 
-        <!-- Lineage Direction Tabs -->
-        <div class="mb-6">
-            <div class="border-b border-gray-200">
-                <nav class="-mb-px flex space-x-8">
-                    <button onclick="showTab('upstream')" id="upstream-tab" class="tab-button border-b-2 border-primary text-primary py-4 px-1 text-sm font-medium">
-                        Upstream (Sources)
+        <!-- Tab Navigation -->
+        <div class="border-b border-gray-200 mb-6">
+            <nav class="-mb-px flex gap-1">
+                <button id="tab-btn-erd" onclick="switchTab('erd')"
+                        class="tab-btn border-b-2 border-primary text-primary px-4 py-3 text-sm font-medium transition flex items-center gap-2">
+                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2"/></svg>
+                    ERD Diagram
+                </button>
+                <button id="tab-btn-lineage" onclick="switchTab('lineage')"
+                        class="tab-btn border-b-2 border-transparent text-gray-500 hover:text-gray-700 px-4 py-3 text-sm font-medium transition flex items-center gap-2">
+                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                    Lineage Trace
+                </button>
+                <button id="tab-btn-schema" onclick="switchTab('schema')"
+                        class="tab-btn border-b-2 border-transparent text-gray-500 hover:text-gray-700 px-4 py-3 text-sm font-medium transition flex items-center gap-2">
+                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4"/></svg>
+                    Schema Browser
+                </button>
+            </nav>
+        </div>
+
+        <!-- ── TAB 1: ERD DIAGRAM ─────────────────────────────────────────────── -->
+        <div id="tab-erd">
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-4">
+                <div class="flex flex-wrap gap-4 items-end">
+                    <div class="flex-1 min-w-48">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Database</label>
+                        <select id="erdDbSelect" onchange="loadErd()"
+                                class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary">
+                            <option value="">— Select a database —</option>
+                        </select>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <label class="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
+                            <input type="checkbox" id="erdShowTypes" checked onchange="renderErd()"
+                                   class="rounded text-primary focus:ring-primary">
+                            Show data types
+                        </label>
+                        <label class="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
+                            <input type="checkbox" id="erdShowPii" checked onchange="renderErd()"
+                                   class="rounded text-primary focus:ring-primary">
+                            Highlight PII
+                        </label>
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="zoomErd(-0.2)" class="px-3 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50">−</button>
+                        <button onclick="zoomErd(0.2)"  class="px-3 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50">+</button>
+                        <button onclick="zoomErd(0)"    class="px-3 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50">Fit</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="erd-empty" class="bg-white rounded-xl shadow-sm border border-gray-200 p-16 text-center text-gray-400">
+                <svg class="mx-auto h-14 w-14 mb-4 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7"/></svg>
+                <p class="text-base font-medium text-gray-600">Select a database to render its ERD</p>
+                <p class="text-sm mt-1">Tables, columns, types, and relationships will be visualised automatically</p>
+            </div>
+
+            <div id="erd-loading" class="hidden bg-white rounded-xl shadow-sm border border-gray-200 p-16 text-center">
+                <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-primary mx-auto mb-4"></div>
+                <p class="text-gray-600 text-sm">Building ERD…</p>
+            </div>
+
+            <div id="erd-container" class="hidden bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                <!-- Legend -->
+                <div class="flex flex-wrap gap-4 px-6 py-3 border-b border-gray-100 bg-gray-50 text-xs text-gray-600">
+                    <span class="flex items-center gap-1.5"><span class="inline-block w-3 h-3 rounded-sm bg-red-200 border border-red-400"></span>PII field</span>
+                    <span class="flex items-center gap-1.5"><span class="inline-block w-3 h-3 rounded-sm bg-yellow-200 border border-yellow-400"></span>Primary key</span>
+                    <span class="flex items-center gap-1.5"><span class="inline-block w-3 h-3 rounded-sm bg-blue-200 border border-blue-400"></span>Foreign key</span>
+                    <span class="ml-auto text-gray-400" id="erd-stats"></span>
+                </div>
+                <!-- Diagram canvas (pannable/zoomable) -->
+                <div id="erd-wrap" style="overflow:auto;min-height:520px;cursor:grab;" class="p-6">
+                    <div id="erd-diagram" style="transform-origin:top left;transition:transform 0.2s;min-width:max-content;"></div>
+                </div>
+            </div>
+
+            <div id="erd-error" class="hidden bg-red-50 border border-red-200 rounded-xl p-6 text-red-700 text-sm"></div>
+        </div>
+
+        <!-- ── TAB 2: LINEAGE TRACE ───────────────────────────────────────────── -->
+        <div id="tab-lineage" class="hidden">
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Search Field to Trace</label>
+                <div class="flex gap-3">
+                    <div class="relative flex-1">
+                        <svg class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0"/></svg>
+                        <input id="lineageSearch" type="text" placeholder="e.g. customer_email, order_id, total_amount…"
+                               class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary"
+                               onkeyup="if(event.key==='Enter') traceLineage()">
+                        <div id="lineageSuggestions" class="absolute z-20 w-full bg-white border border-gray-200 rounded-lg shadow-lg mt-1 hidden max-h-56 overflow-y-auto"></div>
+                    </div>
+                    <button onclick="traceLineage()" class="px-5 py-2 bg-primary text-white rounded-lg text-sm hover:bg-secondary transition font-medium">
+                        Trace Lineage
                     </button>
-                    <button onclick="showTab('downstream')" id="downstream-tab" class="tab-button border-b-2 border-transparent text-gray-500 hover:text-gray-700 py-4 px-1 text-sm font-medium">
-                        Downstream (Consumers)
-                    </button>
-                    <button onclick="showTab('complete')" id="complete-tab" class="tab-button border-b-2 border-transparent text-gray-500 hover:text-gray-700 py-4 px-1 text-sm font-medium">
-                        Complete Graph
-                    </button>
-                </nav>
+                </div>
+                <!-- Direction tabs -->
+                <div class="flex gap-4 mt-4 border-b border-gray-100">
+                    <button onclick="setDirection('upstream')"   id="dir-upstream"   class="dir-btn pb-2 text-sm font-medium text-primary border-b-2 border-primary">← Upstream (Sources)</button>
+                    <button onclick="setDirection('downstream')" id="dir-downstream" class="dir-btn pb-2 text-sm font-medium text-gray-500 border-b-2 border-transparent hover:text-gray-700">Downstream (Consumers) →</button>
+                    <button onclick="setDirection('complete')"   id="dir-complete"   class="dir-btn pb-2 text-sm font-medium text-gray-500 border-b-2 border-transparent hover:text-gray-700">Complete Graph</button>
+                </div>
+            </div>
+
+            <div id="lineage-idle" class="bg-white rounded-xl shadow-sm border border-gray-200 p-16 text-center text-gray-400">
+                <svg class="mx-auto h-14 w-14 mb-4 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                <p class="text-base font-medium text-gray-600">Enter a field name above to trace its lineage</p>
+            </div>
+            <div id="lineage-loading" class="hidden bg-white rounded-xl border border-gray-200 p-16 text-center">
+                <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-primary mx-auto mb-4"></div>
+                <p class="text-gray-600 text-sm">Tracing lineage…</p>
+            </div>
+            <div id="lineage-result" class="hidden bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                <div class="px-6 py-3 border-b border-gray-100 bg-gray-50 flex items-center justify-between">
+                    <span id="lineage-result-title" class="text-sm font-medium text-gray-700"></span>
+                    <span id="lineage-stats" class="text-xs text-gray-400"></span>
+                </div>
+                <div class="p-6 overflow-x-auto">
+                    <svg id="lineage-svg" style="min-width:600px;width:100%;overflow:visible;"></svg>
+                </div>
+                <div class="px-6 pb-6">
+                    <table class="min-w-full text-sm border border-gray-200 rounded-lg overflow-hidden">
+                        <thead class="bg-gray-50 text-xs text-gray-500 uppercase">
+                            <tr>
+                                <th class="px-4 py-2 text-left">Source Field</th>
+                                <th class="px-4 py-2 text-left">→ Target Field</th>
+                                <th class="px-4 py-2 text-left">Type</th>
+                                <th class="px-4 py-2 text-left">Confidence</th>
+                                <th class="px-4 py-2 text-left">Transformation</th>
+                            </tr>
+                        </thead>
+                        <tbody id="lineage-table" class="divide-y divide-gray-100"></tbody>
+                    </table>
+                </div>
+            </div>
+            <div id="lineage-empty" class="hidden bg-white rounded-xl border border-gray-200 p-12 text-center text-gray-500 text-sm">
+                No lineage relationships found for this field.
+            </div>
+
+            <!-- Lineage type legend -->
+            <div class="mt-4 bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+                <p class="text-xs font-medium text-gray-500 uppercase mb-3">Lineage Types</p>
+                <div class="flex flex-wrap gap-4">
+                    <span class="flex items-center gap-1.5 text-xs text-gray-700"><span class="inline-block w-4 h-1.5 rounded bg-blue-500"></span>Direct copy</span>
+                    <span class="flex items-center gap-1.5 text-xs text-gray-700"><span class="inline-block w-4 h-1.5 rounded bg-green-500"></span>Derived / transformed</span>
+                    <span class="flex items-center gap-1.5 text-xs text-gray-700"><span class="inline-block w-4 h-1.5 rounded bg-purple-500"></span>Aggregated</span>
+                    <span class="flex items-center gap-1.5 text-xs text-gray-700"><span class="inline-block w-4 h-1.5 rounded bg-yellow-500"></span>Filtered</span>
+                    <span class="flex items-center gap-1.5 text-xs text-gray-700"><span class="inline-block w-4 h-1.5 rounded bg-red-500"></span>Joined</span>
+                </div>
             </div>
         </div>
 
-        <!-- Lineage Visualization -->
-        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
-            <div id="lineage-viz" class="min-h-96 flex items-center justify-center">
-                <div class="text-center">
-                    <svg class="mx-auto h-16 w-16 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                    </svg>
-                    <h3 class="mt-4 text-lg font-medium text-gray-900">Select a field to visualize lineage</h3>
-                    <p class="mt-2 text-sm text-gray-500">Search for a field above to see its data lineage graph</p>
+        <!-- ── TAB 3: SCHEMA BROWSER ─────────────────────────────────────────── -->
+        <div id="tab-schema" class="hidden">
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-4">
+                <div class="flex flex-wrap gap-4 items-end">
+                    <div class="flex-1 min-w-48">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Database</label>
+                        <select id="schemaDbSelect" onchange="loadSchema()"
+                                class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary">
+                            <option value="">— Select a database —</option>
+                        </select>
+                    </div>
+                    <div class="flex-1 min-w-48">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Filter tables</label>
+                        <input id="schemaFilter" type="text" placeholder="Filter by name…"
+                               onkeyup="filterSchemaTables()"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary">
+                    </div>
                 </div>
             </div>
-        </div>
-
-        <!-- Lineage Legend -->
-        <div class="mt-6 bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <h3 class="text-sm font-medium text-gray-900 mb-4">Lineage Types</h3>
-            <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
-                <div class="flex items-center space-x-2">
-                    <div class="w-4 h-4 rounded bg-blue-500"></div>
-                    <span class="text-sm text-gray-700">Direct</span>
-                </div>
-                <div class="flex items-center space-x-2">
-                    <div class="w-4 h-4 rounded bg-green-500"></div>
-                    <span class="text-sm text-gray-700">Derived</span>
-                </div>
-                <div class="flex items-center space-x-2">
-                    <div class="w-4 h-4 rounded bg-purple-500"></div>
-                    <span class="text-sm text-gray-700">Aggregated</span>
-                </div>
-                <div class="flex items-center space-x-2">
-                    <div class="w-4 h-4 rounded bg-yellow-500"></div>
-                    <span class="text-sm text-gray-700">Filtered</span>
-                </div>
-                <div class="flex items-center space-x-2">
-                    <div class="w-4 h-4 rounded bg-red-500"></div>
-                    <span class="text-sm text-gray-700">Joined</span>
-                </div>
+            <div id="schema-empty" class="bg-white rounded-xl shadow-sm border border-gray-200 p-16 text-center text-gray-400">
+                <svg class="mx-auto h-14 w-14 mb-4 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4"/></svg>
+                <p class="text-base font-medium text-gray-600">Select a database to browse its schema</p>
             </div>
+            <div id="schema-loading" class="hidden bg-white rounded-xl border border-gray-200 p-16 text-center">
+                <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-primary mx-auto mb-4"></div>
+            </div>
+            <div id="schema-grid" class="hidden grid grid-cols-1 lg:grid-cols-2 gap-4"></div>
         </div>
-
     </main>
 
-    <script>
-        let currentTab = 'upstream';
-
-        function showTab(tab) {
-            currentTab = tab;
-            // Update active tab styling
-            document.querySelectorAll('.tab-button').forEach(btn => {
-                btn.classList.remove('border-primary', 'text-primary');
-                btn.classList.add('border-transparent', 'text-gray-500');
-            });
-            document.getElementById(tab + '-tab').classList.add('border-primary', 'text-primary');
-            document.getElementById(tab + '-tab').classList.remove('border-transparent', 'text-gray-500');
-        }
-
-        async function searchLineage() {
-            const query = document.getElementById('lineageSearch').value;
-            if (!query) {
-                alert('Please enter a field name');
-                return;
-            }
-
-            const vizDiv = document.getElementById('lineage-viz');
-            vizDiv.innerHTML = '<div class="text-center py-12"><div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div><p class="mt-4 text-gray-600">Loading lineage...</p></div>';
-
-            // Simulate API call
-            setTimeout(() => {
-                vizDiv.innerHTML = `
-                    <div class="space-y-4">
-                        <div class="text-center mb-6">
-                            <div class="inline-block px-4 py-2 bg-primary text-white rounded-lg font-medium">
-                                ${query}
-                            </div>
-                        </div>
-                        <div class="flex items-center justify-center space-x-4">
-                            <div class="text-center">
-                                <div class="w-32 h-20 bg-blue-100 rounded-lg flex items-center justify-center mb-2">
-                                    <span class="text-sm font-medium text-blue-900">Source Field</span>
-                                </div>
-                                <p class="text-xs text-gray-600">upstream_table.field</p>
-                            </div>
-                            <svg class="h-6 w-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                            </svg>
-                            <div class="text-center">
-                                <div class="w-32 h-20 bg-green-100 rounded-lg flex items-center justify-center mb-2">
-                                    <span class="text-sm font-medium text-green-900">${query}</span>
-                                </div>
-                                <p class="text-xs text-gray-600">current_table</p>
-                            </div>
-                            <svg class="h-6 w-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                            </svg>
-                            <div class="text-center">
-                                <div class="w-32 h-20 bg-purple-100 rounded-lg flex items-center justify-center mb-2">
-                                    <span class="text-sm font-medium text-purple-900">Target Field</span>
-                                </div>
-                                <p class="text-xs text-gray-600">downstream_table.field</p>
-                            </div>
-                        </div>
-                        <p class="text-center text-sm text-gray-500 mt-6">
-                            Use the API endpoint <code class="px-2 py-1 bg-gray-100 rounded">/api/v1/lineage/${currentTab}/{fieldId}</code> for detailed lineage data
-                        </p>
-                    </div>
-                `;
-            }, 1000);
-        }
+    <!-- Mermaid via CDN (ESM) -->
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({ startOnLoad: false, theme: 'default',
+            er: { diagramPadding: 20, layoutDirection: 'TB', minEntityWidth: 100, useMaxWidth: true }
+        });
+        window._mermaid = mermaid;
     </script>
 
-    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script>
+    /* ── State ─────────────────────────────────────────────────────────────── */
+    const TABS = ['erd', 'lineage', 'schema'];
+    let erdData      = null;   // { tables, fields } cached per db
+    let lineageDir   = 'upstream';
+    let erdScale     = 1;
+    let _searchTimer = null;
+
+    /* ── Tab switching ─────────────────────────────────────────────────────── */
+    function switchTab(tab) {
+        TABS.forEach(t => {
+            document.getElementById('tab-' + t).classList.add('hidden');
+            const b = document.getElementById('tab-btn-' + t);
+            b.classList.remove('border-primary', 'text-primary');
+            b.classList.add('border-transparent', 'text-gray-500');
+        });
+        document.getElementById('tab-' + tab).classList.remove('hidden');
+        const active = document.getElementById('tab-btn-' + tab);
+        active.classList.add('border-primary', 'text-primary');
+        active.classList.remove('border-transparent', 'text-gray-500');
+    }
+
+    /* ── Bootstrap: load database list into both selects ──────────────────── */
+    document.addEventListener('DOMContentLoaded', async () => {
+        try {
+            const dbs = await fetch('/api/v1/databases').then(r => r.json());
+            const erdSel    = document.getElementById('erdDbSelect');
+            const schemaSel = document.getElementById('schemaDbSelect');
+            dbs.forEach(db => {
+                const mkOpt = () => { const o = document.createElement('option'); o.value = db.id; o.textContent = `${db.name} (${db.type})`; return o; };
+                erdSel.appendChild(mkOpt());
+                schemaSel.appendChild(mkOpt());
+            });
+            // Auto-load first DB
+            if (dbs.length) {
+                erdSel.value = dbs[0].id; loadErd();
+                schemaSel.value = dbs[0].id; loadSchema();
+            }
+        } catch(e) { console.error('DB list error', e); }
+
+        // Lineage autocomplete
+        document.getElementById('lineageSearch').addEventListener('input', e => {
+            clearTimeout(_searchTimer);
+            _searchTimer = setTimeout(() => autocompleteSuggestions(e.target.value), 300);
+        });
+    });
+
+    /* ══════════════════════════════════════════════════════════════════════════
+       ERD DIAGRAM
+    ══════════════════════════════════════════════════════════════════════════ */
+    async function loadErd() {
+        const dbId = document.getElementById('erdDbSelect').value;
+        if (!dbId) return;
+        show('erd-loading'); hide('erd-empty'); hide('erd-container'); hide('erd-error');
+        try {
+            // Load tables
+            const page   = await fetch(`/api/v1/databases/${dbId}/tables?size=200`).then(r => r.json());
+            const tables = page.content ?? (Array.isArray(page) ? page : []);
+
+            // Load fields for each table in parallel (cap at 30 tables to avoid overload)
+            const sample = tables.slice(0, 30);
+            const fieldMap = {};
+            await Promise.all(sample.map(async t => {
+                try {
+                    const fs = await fetch(`/api/v1/tables/${t.id}/fields`).then(r => r.json());
+                    fieldMap[t.id] = Array.isArray(fs) ? fs : (fs.content ?? []);
+                } catch { fieldMap[t.id] = []; }
+            }));
+
+            erdData = { tables: sample, fieldMap };
+            hide('erd-loading');
+            renderErd();
+        } catch(e) {
+            hide('erd-loading');
+            show('erd-error');
+            document.getElementById('erd-error').textContent = 'Failed to load ERD: ' + e.message;
+        }
+    }
+
+    async function renderErd() {
+        if (!erdData) return;
+        show('erd-loading'); hide('erd-container'); hide('erd-error');
+        const showTypes = document.getElementById('erdShowTypes').checked;
+        const showPii   = document.getElementById('erdShowPii').checked;
+        const { tables, fieldMap } = erdData;
+
+        // Build Mermaid ER syntax
+        let mmd = 'erDiagram\n';
+
+        // Entities
+        for (const t of tables) {
+            const fields = fieldMap[t.id] ?? [];
+            const safeName = safeMermaid(t.tableName);
+            mmd += `    ${safeName} {\n`;
+            for (const f of fields.slice(0, 20)) {
+                const dt   = showTypes ? safeMermaid(f.dataType ?? 'unknown').replace(/[^a-zA-Z0-9_]/g,'_') : 'col';
+                const fname = safeMermaid(f.fieldName);
+                const attrs = [];
+                if (f.isPrimaryKey) attrs.push('PK');
+                if (f.isForeignKey) attrs.push('FK');
+                if (showPii && f.sensitivityLevel === 'PII') attrs.push('"🔒PII"');
+                mmd += `        ${dt} ${fname}${attrs.length ? ' ' + attrs.join(',') : ''}\n`;
+            }
+            if ((fieldMap[t.id]?.length ?? 0) > 20) mmd += `        string _more_fields_ "..."\n`;
+            mmd += `    }\n`;
+        }
+
+        // Relationships: infer from FK fields in lineage, or FK column name convention
+        const relSet = new Set();
+        for (const t of tables) {
+            const fields = fieldMap[t.id] ?? [];
+            for (const f of fields) {
+                if (!f.isForeignKey) continue;
+                // Try to infer referenced table from field name (e.g. customer_id → customers or customer)
+                const base = f.fieldName.replace(/_id$/i,'').replace(/_key$/i,'');
+                const target = tables.find(t2 =>
+                    t2.tableName.toLowerCase() === base.toLowerCase() ||
+                    t2.tableName.toLowerCase() === base.toLowerCase() + 's' ||
+                    t2.tableName.toLowerCase() === base.toLowerCase() + 'es'
+                );
+                if (target && target.id !== t.id) {
+                    const rel = `${safeMermaid(t.tableName)} }o--|| ${safeMermaid(target.tableName)} : "${esc(f.fieldName)}"`;
+                    if (!relSet.has(rel)) { relSet.add(rel); mmd += `    ${rel}\n`; }
+                }
+            }
+        }
+
+        try {
+            // Wait for mermaid to be available (loaded via ESM module)
+            let tries = 0;
+            while (!window._mermaid && tries++ < 30) await new Promise(r => setTimeout(r, 200));
+            if (!window._mermaid) throw new Error('Mermaid library not loaded');
+
+            const { svg } = await window._mermaid.render('erd-mermaid-' + Date.now(), mmd);
+            document.getElementById('erd-diagram').innerHTML = svg;
+            erdScale = 1;
+            document.getElementById('erd-diagram').style.transform = '';
+            document.getElementById('erd-stats').textContent =
+                `${tables.length} tables · ${Object.values(fieldMap).reduce((a,b)=>a+b.length,0)} columns · ${relSet.size} relationships`;
+            hide('erd-loading'); show('erd-container');
+        } catch(e) {
+            hide('erd-loading');
+            // Fallback: render as HTML table grid if mermaid fails
+            renderErdFallback(tables, fieldMap, showPii);
+        }
+    }
+
+    function renderErdFallback(tables, fieldMap, showPii) {
+        show('erd-container');
+        const html = `<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 p-2">` +
+            tables.map(t => {
+                const fields = (fieldMap[t.id] ?? []).slice(0, 15);
+                return `<div class="border-2 border-gray-200 rounded-lg overflow-hidden text-xs font-mono">
+                    <div style="background:#0033A0" class="text-white px-3 py-2 font-bold text-sm">${esc(t.tableName)}</div>
+                    <div class="divide-y divide-gray-100">
+                        ${fields.map(f => `<div class="px-3 py-1 flex justify-between gap-2 ${f.isPrimaryKey?'bg-yellow-50':f.isForeignKey?'bg-blue-50':showPii&&f.sensitivityLevel==='PII'?'bg-red-50':''}">
+                            <span class="${f.isPrimaryKey?'text-yellow-700':f.isForeignKey?'text-blue-700':'text-gray-700'}">${f.isPrimaryKey?'🔑 ':f.isForeignKey?'🔗 ':showPii&&f.sensitivityLevel==='PII'?'🔒 ':''}${esc(f.fieldName)}</span>
+                            <span class="text-gray-400">${esc(f.dataType??'')}</span>
+                        </div>`).join('')}
+                        ${(fieldMap[t.id]?.length??0)>15?`<div class="px-3 py-1 text-gray-400">+${(fieldMap[t.id]?.length??0)-15} more…</div>`:''}
+                    </div>
+                </div>`;
+            }).join('') + `</div>`;
+        document.getElementById('erd-diagram').innerHTML = html;
+    }
+
+    function safeMermaid(s) {
+        return (s ?? '').replace(/[^a-zA-Z0-9_]/g, '_').replace(/^(\d)/, '_$1') || '_unknown';
+    }
+
+    function zoomErd(delta) {
+        const el = document.getElementById('erd-diagram');
+        if (!el) return;
+        if (delta === 0) { erdScale = 1; el.style.transform = ''; return; }
+        erdScale = Math.min(3, Math.max(0.3, erdScale + delta));
+        el.style.transform = `scale(${erdScale})`;
+    }
+
+    function exportDiagram() {
+        const svg = document.querySelector('#erd-diagram svg');
+        if (!svg) { alert('No diagram to export. Load an ERD first.'); return; }
+        const blob = new Blob([svg.outerHTML], { type: 'image/svg+xml' });
+        const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+        a.download = 'erd-diagram.svg'; a.click();
+    }
+
+    /* ══════════════════════════════════════════════════════════════════════════
+       LINEAGE TRACE
+    ══════════════════════════════════════════════════════════════════════════ */
+    function setDirection(dir) {
+        lineageDir = dir;
+        ['upstream','downstream','complete'].forEach(d => {
+            const b = document.getElementById('dir-' + d);
+            b.classList.toggle('text-primary', d === dir);
+            b.classList.toggle('border-primary', d === dir);
+            b.classList.toggle('text-gray-500', d !== dir);
+            b.classList.toggle('border-transparent', d !== dir);
+        });
+    }
+
+    async function autocompleteSuggestions(q) {
+        const box = document.getElementById('lineageSuggestions');
+        if (!q || q.length < 2) { box.classList.add('hidden'); return; }
+        try {
+            const res  = await fetch(`/api/v1/fields/search?query=${encodeURIComponent(q)}&size=8`);
+            const page = await res.json();
+            const items = page.content ?? (Array.isArray(page) ? page : []);
+            if (!items.length) { box.classList.add('hidden'); return; }
+            box.innerHTML = items.map(f =>
+                `<div class="px-4 py-2 hover:bg-gray-50 cursor-pointer text-sm flex justify-between gap-2"
+                      onclick="selectSuggestion(${f.id}, '${esc(f.fieldName)}')">
+                    <span>${esc(f.fieldName)}</span>
+                    <span class="text-gray-400">${esc(f.tableName ?? '')}</span>
+                </div>`).join('');
+            box.classList.remove('hidden');
+        } catch { box.classList.add('hidden'); }
+    }
+
+    function selectSuggestion(id, name) {
+        document.getElementById('lineageSearch').value = name;
+        document.getElementById('lineageSuggestions').classList.add('hidden');
+        traceLineage(id);
+    }
+
+    async function traceLineage(fieldId) {
+        document.getElementById('lineageSuggestions').classList.add('hidden');
+        const query = document.getElementById('lineageSearch').value.trim();
+        if (!query && !fieldId) return;
+
+        show('lineage-loading'); hide('lineage-idle'); hide('lineage-result');
+        hide('lineage-empty');
+
+        try {
+            // Resolve field id if not provided
+            if (!fieldId) {
+                const res  = await fetch(`/api/v1/fields/search?query=${encodeURIComponent(query)}&size=1`);
+                const page = await res.json();
+                const items = page.content ?? (Array.isArray(page) ? page : []);
+                if (!items.length) { hide('lineage-loading'); show('lineage-empty'); return; }
+                fieldId = items[0].id;
+            }
+
+            // Fetch graph(s)
+            let nodes = [], edges = [];
+            const dirs = lineageDir === 'complete' ? ['upstream','downstream'] : [lineageDir];
+            for (const d of dirs) {
+                const g = await fetch(`/api/v1/lineage/${d}/${fieldId}`).then(r => r.json());
+                (g.nodes ?? []).forEach(n => { if (!nodes.find(x => x.id === n.id)) nodes.push(n); });
+                (g.edges ?? []).forEach(e => { if (!edges.find(x => x.id === e.id)) edges.push(e); });
+            }
+
+            hide('lineage-loading');
+            if (!nodes.length) { show('lineage-empty'); return; }
+
+            document.getElementById('lineage-result-title').textContent = `Lineage for: ${query || 'field #' + fieldId}`;
+            document.getElementById('lineage-stats').textContent = `${nodes.length} nodes · ${edges.length} relationships`;
+
+            renderLineageSvg(nodes, edges);
+
+            // Table
+            document.getElementById('lineage-table').innerHTML = edges.map(e => `
+                <tr class="hover:bg-gray-50">
+                    <td class="px-4 py-2 font-mono text-xs text-gray-700">${esc(e.sourceFieldName ?? e.source ?? '')}</td>
+                    <td class="px-4 py-2 font-mono text-xs text-gray-700">${esc(e.targetFieldName ?? e.target ?? '')}</td>
+                    <td class="px-4 py-2">${lineageTypeBadge(e.lineageType ?? e.type)}</td>
+                    <td class="px-4 py-2 text-xs text-gray-600">${e.confidence != null ? Math.round(e.confidence * 100) + '%' : '—'}</td>
+                    <td class="px-4 py-2 text-xs text-gray-500 max-w-xs truncate" title="${esc(e.transformationLogic??'')}">${esc(e.transformationLogic ?? '—')}</td>
+                </tr>`).join('');
+            show('lineage-result');
+        } catch(err) {
+            hide('lineage-loading'); show('lineage-empty');
+            console.error('Lineage error:', err);
+        }
+    }
+
+    function renderLineageSvg(nodes, edges) {
+        const W = 180, H = 56, PAD = 60, COLS = Math.min(4, nodes.length);
+        const rows = Math.ceil(nodes.length / COLS);
+        const svgW = COLS * (W + PAD) + PAD;
+        const svgH = rows * (H + PAD) + PAD;
+
+        // Assign positions
+        const pos = {};
+        nodes.forEach((n, i) => {
+            const col = i % COLS, row = Math.floor(i / COLS);
+            pos[n.id] = { x: PAD + col * (W + PAD), y: PAD + row * (H + PAD) };
+        });
+
+        const typeColors = { DIRECT:'#3b82f6', DERIVED:'#22c55e', AGGREGATED:'#a855f7', FILTERED:'#eab308', JOINED:'#ef4444' };
+
+        const edgeSvg = edges.map(e => {
+            const s = pos[e.sourceId], t = pos[e.targetId];
+            if (!s || !t) return '';
+            const col = typeColors[(e.lineageType ?? e.type ?? '').toUpperCase()] ?? '#9ca3af';
+            const mx = (s.x + W/2 + t.x + W/2) / 2;
+            return `<path d="M${s.x+W/2},${s.y+H} C${mx},${s.y+H+30} ${mx},${t.y-30} ${t.x+W/2},${t.y}"
+                        fill="none" stroke="${col}" stroke-width="2" marker-end="url(#arr)"/>`;
+        }).join('');
+
+        const nodeSvg = nodes.map(n => {
+            const p = pos[n.id];
+            const label = (n.fieldName ?? n.id ?? '').substring(0, 22);
+            const sub   = (n.tableName ?? '').substring(0, 28);
+            const isPii = n.sensitivityLevel === 'PII';
+            return `<g transform="translate(${p.x},${p.y})">
+                <rect width="${W}" height="${H}" rx="8" ry="8"
+                      fill="${isPii ? '#fef2f2' : '#f0f9ff'}"
+                      stroke="${isPii ? '#fca5a5' : '#bfdbfe'}" stroke-width="1.5"/>
+                <text x="${W/2}" y="22" text-anchor="middle" font-size="12" font-weight="600"
+                      font-family="ui-monospace,monospace" fill="#1e293b">${esc(label)}</text>
+                <text x="${W/2}" y="40" text-anchor="middle" font-size="10"
+                      font-family="system-ui,sans-serif" fill="#64748b">${esc(sub)}</text>
+                ${isPii ? `<text x="${W-8}" y="14" text-anchor="end" font-size="11">🔒</text>` : ''}
+            </g>`;
+        }).join('');
+
+        document.getElementById('lineage-svg').setAttribute('viewBox', `0 0 ${svgW} ${svgH}`);
+        document.getElementById('lineage-svg').setAttribute('height', svgH);
+        document.getElementById('lineage-svg').innerHTML = `
+            <defs>
+                <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+                    <path d="M 0 0 L 10 5 L 0 10 z" fill="#94a3b8"/>
+                </marker>
+            </defs>
+            ${edgeSvg}${nodeSvg}`;
+    }
+
+    function lineageTypeBadge(type) {
+        const colors = { DIRECT:'bg-blue-100 text-blue-800', DERIVED:'bg-green-100 text-green-800',
+                         AGGREGATED:'bg-purple-100 text-purple-800', FILTERED:'bg-yellow-100 text-yellow-800', JOINED:'bg-red-100 text-red-800' };
+        const cls = colors[(type??'').toUpperCase()] ?? 'bg-gray-100 text-gray-700';
+        return `<span class="px-2 py-0.5 rounded-full text-xs font-medium ${cls}">${esc(type ?? '—')}</span>`;
+    }
+
+    /* ══════════════════════════════════════════════════════════════════════════
+       SCHEMA BROWSER
+    ══════════════════════════════════════════════════════════════════════════ */
+    let schemaTableData = [];
+
+    async function loadSchema() {
+        const dbId = document.getElementById('schemaDbSelect').value;
+        if (!dbId) return;
+        show('schema-loading'); hide('schema-empty'); hide('schema-grid');
+        try {
+            const page   = await fetch(`/api/v1/databases/${dbId}/tables?size=200`).then(r => r.json());
+            const tables = page.content ?? (Array.isArray(page) ? page : []);
+            const fieldMap = {};
+            await Promise.all(tables.slice(0, 50).map(async t => {
+                try { fieldMap[t.id] = await fetch(`/api/v1/tables/${t.id}/fields`).then(r => r.json()); }
+                catch { fieldMap[t.id] = []; }
+            }));
+            schemaTableData = tables.map(t => ({ t, fields: Array.isArray(fieldMap[t.id]) ? fieldMap[t.id] : (fieldMap[t.id]?.content ?? []) }));
+            renderSchemaGrid(schemaTableData);
+            hide('schema-loading'); show('schema-grid');
+        } catch(e) {
+            hide('schema-loading'); show('schema-empty');
+            console.error('Schema error', e);
+        }
+    }
+
+    function renderSchemaGrid(items) {
+        document.getElementById('schema-grid').innerHTML = items.map(({ t, fields }) => {
+            const piiCount = fields.filter(f => f.sensitivityLevel === 'PII').length;
+            const pkCount  = fields.filter(f => f.isPrimaryKey).length;
+            const fkCount  = fields.filter(f => f.isForeignKey).length;
+            return `
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                <div class="flex items-center justify-between px-4 py-3 text-white" style="background:#0033A0">
+                    <div>
+                        <div class="font-bold text-sm">${esc(t.tableName)}</div>
+                        <div class="text-xs opacity-75">${esc(t.schema ?? '')} · ${t.rowCount != null ? Number(t.rowCount).toLocaleString() + ' rows' : ''}</div>
+                    </div>
+                    <div class="flex gap-1.5 text-xs">
+                        ${piiCount ? `<span class="bg-red-500 px-1.5 py-0.5 rounded-full">${piiCount} PII</span>` : ''}
+                        ${pkCount  ? `<span class="bg-yellow-500 px-1.5 py-0.5 rounded-full">${pkCount} PK</span>` : ''}
+                        ${fkCount  ? `<span class="bg-blue-300 px-1.5 py-0.5 rounded-full text-blue-900">${fkCount} FK</span>` : ''}
+                    </div>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full text-xs">
+                        <thead class="bg-gray-50 text-gray-400 uppercase text-xs">
+                            <tr>
+                                <th class="px-3 py-2 text-left">Column</th>
+                                <th class="px-3 py-2 text-left">Type</th>
+                                <th class="px-3 py-2 text-left">Flags</th>
+                                <th class="px-3 py-2 text-left">Sensitivity</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-50">
+                            ${fields.slice(0,15).map(f => `
+                            <tr class="${f.isPrimaryKey?'bg-yellow-50/50':f.isForeignKey?'bg-blue-50/50':f.sensitivityLevel==='PII'?'bg-red-50/50':'hover:bg-gray-50/50'}">
+                                <td class="px-3 py-1.5 font-mono font-medium text-gray-800">${esc(f.fieldName)}</td>
+                                <td class="px-3 py-1.5 font-mono text-gray-500">${esc(f.dataType ?? '')}</td>
+                                <td class="px-3 py-1.5">
+                                    ${f.isPrimaryKey ? '<span class="text-yellow-600 font-bold" title="Primary Key">PK</span>' : ''}
+                                    ${f.isForeignKey ? '<span class="text-blue-600 font-bold ml-1" title="Foreign Key">FK</span>' : ''}
+                                    ${f.isNullable === false ? '' : '<span class="text-gray-300 ml-1">NULL</span>'}
+                                </td>
+                                <td class="px-3 py-1.5">${sensitivityPill(f.sensitivityLevel)}</td>
+                            </tr>`).join('')}
+                            ${fields.length > 15 ? `<tr><td colspan="4" class="px-3 py-1.5 text-gray-400 text-center">+${fields.length-15} more columns…</td></tr>` : ''}
+                        </tbody>
+                    </table>
+                </div>
+                ${t.description ? `<div class="px-4 py-2 border-t border-gray-100 text-xs text-gray-500 bg-gray-50 truncate" title="${esc(t.description)}">${esc(t.description)}</div>` : ''}
+            </div>`;
+        }).join('');
+    }
+
+    function filterSchemaTables() {
+        const q = document.getElementById('schemaFilter').value.toLowerCase();
+        const filtered = q ? schemaTableData.filter(({ t }) => t.tableName.toLowerCase().includes(q)) : schemaTableData;
+        renderSchemaGrid(filtered);
+    }
+
+    function sensitivityPill(level) {
+        const c = { PII:'bg-red-100 text-red-700', CONFIDENTIAL:'bg-orange-100 text-orange-700', INTERNAL:'bg-gray-100 text-gray-600', PUBLIC:'bg-green-100 text-green-700' };
+        if (!level) return '';
+        return `<span class="px-1.5 py-0.5 rounded-full text-xs ${c[level]??'bg-gray-100 text-gray-600'}">${esc(level)}</span>`;
+    }
+
+    /* ── Helpers ───────────────────────────────────────────────────────────── */
+    function show(id) { document.getElementById(id)?.classList.remove('hidden'); }
+    function hide(id) { document.getElementById(id)?.classList.add('hidden'); }
+    function esc(s)   { return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+    </script>
 </body>
 </html>

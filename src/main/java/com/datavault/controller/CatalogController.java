@@ -167,6 +167,16 @@ public class CatalogController {
         return ResponseEntity.ok(fields);
     }
 
+    @GetMapping("/fields/search")
+    @Operation(summary = "Search fields by name, business name, or description")
+    public ResponseEntity<Page<FieldMetadataDTO>> searchFields(
+            @RequestParam String query,
+            Pageable pageable) {
+        Page<FieldMetadataDTO> results = fieldRepository.searchFields(query, pageable)
+                .map(f -> fieldService.getFieldById(f.getId()));
+        return ResponseEntity.ok(results);
+    }
+
     @GetMapping("/fields/{id}")
     @Operation(summary = "Get field metadata by ID")
     public ResponseEntity<FieldMetadataDTO> getFieldById(@PathVariable Long id) {

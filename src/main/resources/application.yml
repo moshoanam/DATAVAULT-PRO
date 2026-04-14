@@ -1,10 +1,19 @@
+# ── DataVault Pro — Base Configuration ───────────────────────────────────────
+# Profile-specific overrides live in:
+#   application-development.yml   (H2, debug logging, open CORS)
+#   application-production.yml    (PostgreSQL, INFO logging, restricted CORS)
+#
+# Active profile is controlled by: SPRING_PROFILES_ACTIVE env var
+# Default: development
+
 spring:
   application:
     name: datavault-pro-backend
-  
+
   profiles:
     active: ${SPRING_PROFILES_ACTIVE:development}
-  
+
+  # Base datasource — overridden per profile
   datasource:
     url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/datavault_catalog}
     username: ${DATABASE_USERNAME:postgres}
@@ -14,7 +23,7 @@ spring:
       maximum-pool-size: 20
       minimum-idle: 5
       connection-timeout: 30000
-  
+
   jpa:
     hibernate:
       ddl-auto: update
@@ -22,8 +31,8 @@ spring:
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
-        format_sql: true
-  
+        format_sql: false
+
   flyway:
     enabled: false
 
@@ -48,7 +57,7 @@ spring:
       - tableQuality
 
 server:
-  port: 8080
+  port: ${PORT:8080}
   compression:
     enabled: true
 
@@ -75,9 +84,11 @@ springdoc:
 logging:
   level:
     root: INFO
-    com.datavault: ${LOG_LEVEL:DEBUG}
+    com.datavault: ${LOG_LEVEL:INFO}
 
 app:
+  cors:
+    allowed-origins: ${ALLOWED_ORIGINS:*}
   metadata-sync:
     enabled: ${METADATA_SYNC_ENABLED:false}
     cron: ${METADATA_SYNC_CRON:0 0 */6 * * *}
@@ -85,19 +96,3 @@ app:
     max-search-results: 100
   lineage:
     max-depth: 10
-
-# H2 fallback (comment out to use PostgreSQL)
-#spring:
-#  datasource:
-#    url: jdbc:h2:mem:datavault_catalog
-#    username: sa
-#    password:
-#    driver-class-name: org.h2.Driver
-#  jpa:
-#    properties:
-#      hibernate:
-#        dialect: org.hibernate.dialect.H2Dialect
-#  h2:
-#    console:
-#      enabled: true
-#      path: /h2-console

@@ -1,0 +1,36 @@
+# ── Development profile ──────────────────────────────────────────────────────
+# H2 in-memory database — no PostgreSQL required locally
+spring:
+  datasource:
+    url: ${DATABASE_URL:jdbc:h2:mem:datavault_catalog;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE}
+    username: ${DATABASE_USERNAME:sa}
+    password: ${DATABASE_PASSWORD:}
+    driver-class-name: org.h2.Driver
+    hikari:
+      maximum-pool-size: 5
+      minimum-idle: 1
+
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.H2Dialect
+
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+
+  thymeleaf:
+    cache: false
+
+logging:
+  level:
+    root: INFO
+    com.datavault: DEBUG
+
+app:
+  cors:
+    allowed-origins: "*"

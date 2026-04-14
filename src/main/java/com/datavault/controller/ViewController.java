@@ -1,5 +1,8 @@
 package com.datavault.controller;
 
+import com.datavault.repository.DatabaseRepository;
+import com.datavault.repository.FieldMetadataRepository;
+import com.datavault.repository.TableMetadataRepository;
 import com.datavault.service.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
@@ -14,24 +17,28 @@ import java.util.Map;
 @Controller
 @RequiredArgsConstructor
 public class ViewController {
-    
+
     private final DatabaseService databaseService;
     private final ChangeTrackingService changeTrackingService;
+    private final DatabaseRepository databaseRepository;
+    private final TableMetadataRepository tableRepository;
+    private final FieldMetadataRepository fieldRepository;
 
     @GetMapping("/")
     public String index(Model model) {
-        String username = "admin"; // Default admin user
-        
-        // Get statistics
         Map<String, Object> stats = new HashMap<>();
-        stats.put("totalDatabases", 12);
-        stats.put("totalTables", 487);
-        stats.put("piiFields", 245);
-        
+        stats.put("totalDatabases", databaseRepository.count());
+        stats.put("totalTables",    tableRepository.count());
+        try {
+            stats.put("piiFields", fieldRepository.countBySensitivityLevel(
+                com.datavault.entity.SensitivityLevel.PII));
+        } catch (Exception e) {
+            stats.put("piiFields", 0L);
+        }
+
         model.addAttribute("stats", stats);
-        model.addAttribute("databases", databaseService.getAllDatabases(username));
+        model.addAttribute("databases", databaseService.getAllDatabases("admin"));
         model.addAttribute("recentChanges", changeTrackingService.getRecentChanges(10));
-        
         return "index";
     }
 
@@ -91,7 +98,11 @@ public class ViewController {
     
     @GetMapping("/glossary/edit/{id}")
     public String editGlossaryTerm(@PathVariable Long id, Model model) {
-        // Would load term from service
         return "glossary-form";
+    }
+
+    @GetMapping("/migration")
+    public String migration(Model model) {
+        return "migration";
     }
 }
