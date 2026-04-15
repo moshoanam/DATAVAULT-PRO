@@ -22,6 +22,7 @@
                         <option value="PostgreSQL">PostgreSQL</option>
                         <option value="MSSQL">MS SQL Server</option>
                         <option value="MongoDB">MongoDB</option>
+                        <option value="AWSGlue">AWS Glue Data Catalog</option>
                     </select>
                 </div>
 
@@ -44,18 +45,94 @@
                     </div>
                 </div>
 
+                <!-- AWS Glue specific panel -->
+                <div id="glueSection" class="hidden mb-6 space-y-4 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+                    <div class="flex items-center gap-2 mb-1">
+                        <svg class="h-5 w-5 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                  d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z"/>
+                        </svg>
+                        <span class="text-sm font-semibold text-amber-900">AWS Glue Data Catalog</span>
+                    </div>
+
+                    <!-- Region -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">AWS Region</label>
+                        <select id="glueRegion" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary text-sm">
+                            <option value="us-east-1">us-east-1 — US East (N. Virginia)</option>
+                            <option value="us-east-2">us-east-2 — US East (Ohio)</option>
+                            <option value="us-west-1">us-west-1 — US West (N. California)</option>
+                            <option value="us-west-2">us-west-2 — US West (Oregon)</option>
+                            <option value="eu-west-1">eu-west-1 — Europe (Ireland)</option>
+                            <option value="eu-west-2">eu-west-2 — Europe (London)</option>
+                            <option value="eu-central-1">eu-central-1 — Europe (Frankfurt)</option>
+                            <option value="eu-south-1">eu-south-1 — Europe (Milan)</option>
+                            <option value="af-south-1">af-south-1 — Africa (Cape Town)</option>
+                            <option value="ap-southeast-1">ap-southeast-1 — Asia Pacific (Singapore)</option>
+                            <option value="ap-southeast-2">ap-southeast-2 — Asia Pacific (Sydney)</option>
+                            <option value="ap-northeast-1">ap-northeast-1 — Asia Pacific (Tokyo)</option>
+                            <option value="ap-south-1">ap-south-1 — Asia Pacific (Mumbai)</option>
+                            <option value="sa-east-1">sa-east-1 — South America (São Paulo)</option>
+                            <option value="ca-central-1">ca-central-1 — Canada (Central)</option>
+                            <option value="me-south-1">me-south-1 — Middle East (Bahrain)</option>
+                        </select>
+                    </div>
+
+                    <!-- Auth method -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Authentication</label>
+                        <select id="glueAuthMethod" onchange="onGlueAuthChange()"
+                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary text-sm">
+                            <option value="keys">Access Key ID + Secret Access Key</option>
+                            <option value="default">Default Credentials Chain (env vars / instance profile / IAM role)</option>
+                        </select>
+                    </div>
+
+                    <!-- Access keys (shown when auth=keys) -->
+                    <div id="glueKeysSection" class="space-y-3">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Access Key ID</label>
+                            <input type="text" id="glueAccessKeyId"
+                                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary text-sm font-mono"
+                                   placeholder="AKIAIOSFODNN7EXAMPLE">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Secret Access Key</label>
+                            <input type="password" id="glueSecretKey"
+                                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary text-sm font-mono"
+                                   placeholder="wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY">
+                        </div>
+                    </div>
+
+                    <!-- Default creds hint -->
+                    <div id="glueDefaultCredsHint" class="hidden text-xs text-amber-800 bg-amber-100 rounded p-3">
+                        The SDK will resolve credentials automatically from:
+                        <code class="block mt-1">AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY</code> environment variables,
+                        <code>~/.aws/credentials</code> profile, or the EC2/ECS/EKS instance metadata service.
+                    </div>
+
+                    <!-- Optional Glue DB filter -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Limit to Glue Databases (optional)</label>
+                        <input type="text" id="glueDatabases"
+                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary text-sm"
+                               placeholder="raw_zone, curated_zone (leave empty to scan all)">
+                        <p class="text-xs text-gray-500 mt-1">Comma-separated Glue database names. Leave blank to catalog everything.</p>
+                    </div>
+                </div>
+
                 <!-- Database Name -->
                 <div class="mb-6">
                     <label class="block text-sm font-medium text-gray-700 mb-2">Database Name</label>
-                    <input type="text" id="databaseName" required 
+                    <input type="text" id="databaseName" required
                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary"
                            placeholder="e.g., sales_analytics">
                 </div>
 
-                <!-- Connection String -->
-                <div class="mb-6">
+                <!-- Connection String (hidden for Glue) -->
+                <div id="connStringSection" class="mb-6">
                     <label class="block text-sm font-medium text-gray-700 mb-2">Connection String</label>
-                    <input type="text" id="connectionString" required
+                    <input type="text" id="connectionString"
                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary"
                            placeholder="jdbc:postgresql://localhost:5432/mydb">
                     <p class="mt-1 text-sm text-gray-500">Examples:</p>
@@ -156,27 +233,46 @@
     <script>
         // ── Dynamic form behaviour ─────────────────────────────────────────────
         function onDbTypeChange() {
-            const type = document.getElementById('databaseType').value;
+            const type    = document.getElementById('databaseType').value;
             const isMSSQL = type === 'MSSQL';
             const isMongo = type === 'MongoDB';
+            const isGlue  = type === 'AWSGlue';
 
             // Windows-auth section only for MSSQL
             document.getElementById('windowsAuthSection').classList.toggle('hidden', !isMSSQL);
             if (!isMSSQL) {
                 document.getElementById('windowsAuth').checked = false;
-                showCredentials(true);
             }
+
+            // Glue panel
+            document.getElementById('glueSection').classList.toggle('hidden', !isGlue);
+
+            // Connection string + standard credentials hidden for Glue
+            document.getElementById('connStringSection').classList.toggle('hidden', isGlue);
+            document.getElementById('usernameSection').classList.toggle('hidden', isGlue);
+            document.getElementById('passwordSection').classList.toggle('hidden', isGlue);
+            if (!isGlue) showCredentials(!isMSSQL || !document.getElementById('windowsAuth').checked);
 
             // MongoDB collections field
             document.getElementById('mongoCollections').classList.toggle('hidden', !isMongo);
+
+            // Connection string required only for non-Glue
+            document.getElementById('connectionString').required = !isGlue;
 
             // Update connection-string placeholder
             const placeholders = {
                 PostgreSQL: 'jdbc:postgresql://host:5432/database',
                 MSSQL:      'jdbc:sqlserver://host:1433;databaseName=mydb',
-                MongoDB:    'mongodb://host:27017/database'
+                MongoDB:    'mongodb://host:27017/database',
+                AWSGlue:    '(region selected above)'
             };
             document.getElementById('connectionString').placeholder = placeholders[type] ?? '';
+        }
+
+        function onGlueAuthChange() {
+            const useKeys = document.getElementById('glueAuthMethod').value === 'keys';
+            document.getElementById('glueKeysSection').classList.toggle('hidden', !useKeys);
+            document.getElementById('glueDefaultCredsHint').classList.toggle('hidden', useKeys);
         }
 
         function onWindowsAuthChange() {
@@ -203,25 +299,32 @@
 
         // ── Connection test ────────────────────────────────────────────────────
         async function testConnection() {
-            const connectionString = document.getElementById('connectionString').value;
-            const winAuth = document.getElementById('windowsAuth')?.checked;
-            const username = winAuth ? '' : document.getElementById('username').value;
-            const password = winAuth ? '' : document.getElementById('password').value;
+            const type   = document.getElementById('databaseType').value;
+            const isGlue = type === 'AWSGlue';
+
+            let connectionString, username, password;
+            if (isGlue) {
+                connectionString = 'glue://' + document.getElementById('glueRegion').value;
+                const useKeys = document.getElementById('glueAuthMethod').value === 'keys';
+                username = useKeys ? document.getElementById('glueAccessKeyId').value : '';
+                password = useKeys ? document.getElementById('glueSecretKey').value   : '';
+            } else {
+                connectionString = document.getElementById('connectionString').value;
+                const winAuth = document.getElementById('windowsAuth')?.checked;
+                username = winAuth ? '' : document.getElementById('username').value;
+                password = winAuth ? '' : document.getElementById('password').value;
+            }
 
             showStatus('Testing connection…', 'info');
             try {
                 const res = await fetch('/api/v1/databases/test-connection', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({
-                        connectionString, username, password,
-                        databaseType: document.getElementById('databaseType').value
-                    })
+                    body: JSON.stringify({ connectionString, username, password, databaseType: type })
                 });
                 const ok = res.ok && (await res.json()).success;
-                showStatus(ok ? '✓ Connection successful!' : '✗ Connection failed — check your details', ok ? 'success' : 'error');
+                showStatus(ok ? '✓ Connection successful!' : '✗ Connection failed — check credentials and region', ok ? 'success' : 'error');
             } catch {
-                // Fallback: just show success (can't actually test without network)
                 showStatus('✓ Connection details saved. Full test occurs during extraction.', 'success');
             }
         }
@@ -230,40 +333,66 @@
         async function connectDatabase(event) {
             event.preventDefault();
             const type    = document.getElementById('databaseType').value;
+            const isGlue  = type === 'AWSGlue';
             const winAuth = type === 'MSSQL' && document.getElementById('windowsAuth').checked;
+
+            // Build the connection string stored on the Database entity
+            let connectionString;
+            if (isGlue) {
+                connectionString = 'glue://' + document.getElementById('glueRegion').value;
+            } else {
+                connectionString = document.getElementById('connectionString').value;
+            }
 
             const data = {
                 name:             document.getElementById('databaseName').value,
                 type,
-                connectionString: document.getElementById('connectionString').value,
+                connectionString,
                 environment:      document.getElementById('environment').value,
                 description:      document.getElementById('description').value
             };
 
-            showProgress(0, 'Creating database entry…');
+            showProgress(0, 'Creating catalog entry…');
             try {
                 const dbResponse = await fetch('/api/v1/databases', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify(data)
                 });
-                if (!dbResponse.ok) throw new Error('Failed to create database');
+                if (!dbResponse.ok) throw new Error('Failed to create catalog entry');
                 const database = await dbResponse.json();
-                showProgress(30, 'Database created. Starting metadata extraction…');
+                showProgress(30, 'Entry created. Starting metadata extraction…');
 
-                const extractRequest = {
-                    connectionString: data.connectionString,
-                    username:         winAuth ? '' : document.getElementById('username').value,
-                    password:         winAuth ? '' : document.getElementById('password').value,
-                    databaseType:     type,
-                    windowsAuth:      winAuth,
-                    extractLineage:   document.getElementById('extractLineage').checked,
-                    calculateQuality: document.getElementById('calculateQuality').checked
-                };
-
-                if (type === 'MongoDB') {
-                    const col = document.getElementById('collections').value;
-                    if (col) extractRequest.collectionsToExtract = col.split(',').map(c => c.trim());
+                // Build extraction request
+                let extractRequest;
+                if (isGlue) {
+                    const useKeys = document.getElementById('glueAuthMethod').value === 'keys';
+                    const dbFilter = document.getElementById('glueDatabases').value;
+                    extractRequest = {
+                        connectionString,
+                        username:         useKeys ? document.getElementById('glueAccessKeyId').value : '',
+                        password:         useKeys ? document.getElementById('glueSecretKey').value   : '',
+                        databaseType:     'AWSGlue',
+                        extractLineage:   false,   // Glue catalog has no FK metadata to derive lineage
+                        calculateQuality: false,   // Glue has no row-level access
+                        schemasToExtract: dbFilter
+                            ? dbFilter.split(',').map(s => s.trim()).filter(Boolean)
+                            : []
+                    };
+                } else {
+                    extractRequest = {
+                        connectionString,
+                        username:         winAuth ? '' : document.getElementById('username').value,
+                        password:         winAuth ? '' : document.getElementById('password').value,
+                        databaseType:     type,
+                        windowsAuth:      winAuth,
+                        extractLineage:   document.getElementById('extractLineage').checked,
+                        calculateQuality: document.getElementById('calculateQuality').checked
+                    };
+                    if (type === 'MongoDB') {
+                        const col = document.getElementById('collections').value;
+                        if (col) extractRequest.collectionsToExtract = col.split(',').map(c => c.trim());
+                    }
                 }
 
                 const extractResponse = await fetch(`/api/v1/databases/${database.id}/extract`, {
@@ -276,7 +405,7 @@
                 const result = await extractResponse.json();
                 showProgress(100, 'Extraction complete!');
                 showStatus(
-                    `✓ Success! Extracted ${result.tablesExtracted ?? 0} tables, ${result.fieldsExtracted ?? 0} fields, ${result.relationshipsExtracted ?? 0} relationships`,
+                    `✓ Success! Cataloged ${result.tablesExtracted ?? 0} tables across ${result.schemasExtracted ?? 0} ${isGlue ? 'Glue databases' : 'schemas'} · ${result.fieldsExtracted ?? 0} columns`,
                     'success'
                 );
                 setTimeout(() => { window.location.href = `/databases/${database.id}`; }, 2000);

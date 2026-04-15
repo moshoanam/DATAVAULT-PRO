@@ -52,6 +52,13 @@ dependencies {
     implementation 'org.apache.iceberg:iceberg-core:1.4.2'
     implementation 'org.apache.hadoop:hadoop-common:3.3.6'
     implementation 'org.flywaydb:flyway-core'
+
+    // AWS Glue Data Catalog
+    implementation platform('software.amazon.awssdk:bom:2.25.0')
+    implementation('software.amazon.awssdk:glue') {
+        exclude group: 'commons-logging', module: 'commons-logging'
+    }
+    implementation 'software.amazon.awssdk:url-connection-client'
     
     // Database utilities
     implementation 'com.zaxxer:HikariCP'

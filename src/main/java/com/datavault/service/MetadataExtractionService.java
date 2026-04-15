@@ -21,6 +21,7 @@ public class MetadataExtractionService {
     private final PostgreSQLAdapter postgresqlAdapter;
     private final MSSQLAdapter mssqlAdapter;
     private final MongoDBAdapter mongodbAdapter;
+    private final GlueAdapter glueAdapter;
     
     private final DatabaseRepository databaseRepository;
     private final TableMetadataRepository tableRepository;
@@ -62,6 +63,8 @@ public class MetadataExtractionService {
             // Extract based on database type
             if ("MongoDB".equals(request.getDatabaseType())) {
                 extractMongoDBMetadata(request, database, result);
+            } else if ("AWSGlue".equals(request.getDatabaseType())) {
+                extractGlueMetadata(request, database, result);
             } else {
                 extractSQLMetadata(request, database, adapter, result);
             }
@@ -262,6 +265,43 @@ public class MetadataExtractionService {
         }
     }
     
+    // ── AWS Glue extraction ────────────────────────────────────────────────────
+
+    private void extractGlueMetadata(MetadataExtractionRequestDTO request, Database database,
+                                     MetadataExtractionResultDTO result) {
+        String connStr  = request.getConnectionString();
+        String keyId    = request.getUsername();
+        String secret   = request.getPassword();
+
+        // Determine which Glue databases to scan
+        List<String> glueDbs = request.getSchemasToExtract();
+        if (glueDbs == null || glueDbs.isEmpty()) {
+            glueDbs = glueAdapter.extractGlueDatabases(connStr, keyId, secret);
+        }
+        result.setSchemasExtracted(glueDbs.size());
+
+        for (String glueDb : glueDbs) {
+            log.info("Extracting Glue database: {}", glueDb);
+
+            List<TableMetadataDTO> tables = glueAdapter.extractGlueTables(connStr, keyId, secret, glueDb);
+            result.setTablesExtracted(result.getTablesExtracted() + tables.size());
+
+            for (TableMetadataDTO tableDTO : tables) {
+                TableMetadata table = saveOrUpdateTable(database, tableDTO);
+
+                List<FieldMetadataDTO> fields = glueAdapter.extractGlueFields(
+                        connStr, keyId, secret, glueDb, tableDTO.getTableName());
+                result.setFieldsExtracted(result.getFieldsExtracted() + fields.size());
+
+                for (FieldMetadataDTO fieldDTO : fields) {
+                    saveOrUpdateField(table, fieldDTO);
+                }
+            }
+        }
+    }
+
+    // ── Adapter registry ───────────────────────────────────────────────────────
+
     private DatabaseAdapter getAdapter(String databaseType) {
         switch (databaseType.toUpperCase()) {
             case "POSTGRESQL":
@@ -271,6 +311,8 @@ public class MetadataExtractionService {
                 return mssqlAdapter;
             case "MONGODB":
                 return mongodbAdapter;
+            case "AWSGLUE":
+                return glueAdapter;
             default:
                 return null;
         }
